@@ -1,0 +1,5 @@
+# Structure block
+atom 0 radius 0.3 type 1
+atom 1 radius 0.2 type 2
+atom 2 radius 0.25 type 3
+atom 3 radius 0.15 type 4 

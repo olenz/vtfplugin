@@ -1,0 +1,2 @@
+mol new halley.vsf type vsf
+mol addfile halley.vcf type vcf

@@ -1,0 +1,5 @@
+package require vtftools
+vtf_parse_userdata userdata.vtf vtf 0
+foreach { key data } [array get vtf_userdata] {
+	puts "$key\t\"$data\""
+}
