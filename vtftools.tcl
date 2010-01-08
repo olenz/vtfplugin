@@ -1,5 +1,5 @@
 #
-# VTF Tools 1.0
+# VTF Tools
 #
 # A plugin that provides tools to support users of the VTF file
 # format.
@@ -13,9 +13,9 @@ package provide vtftools 1.0
 package require vtfplugin 2.0
 
 namespace eval ::VTFTools:: {
-    namespace export vtf_*
+    namespace export *
 
-    proc vtf_read_userdata { args } {
+    proc read_userdata { args } {
 	set molid "top"
 	set filename ""
 	set type ""
@@ -26,24 +26,35 @@ namespace eval ::VTFTools:: {
 	    set val [ lindex $args [expr $argnum + 1]]
 	    switch -- $arg {
 		"-molid" { set molid $val; incr argnum; }
-		default { error "error: vtf_read_userdata: unknown option: $arg" }
+		default { set filename $arg; break }
 	    }
-	    if { $molid=="top" } then { set molid [ molinfo top ] }
-
-	    if  { $filename eq "" } then {
-		set filename [ molinfo $molid get filepath ]
-		set type [ molinfo $molid get filetype ]
-	    }
-
-	    if  {$type ne "vtf" && $type ne "vcf" && $type ne "vsf" } then {
-		error "error: vtf_read_userdata: $filename is not a VTF/VCF/VSF file"
-	    }
-
-	    vtf_parse_userdata $filename $type $molid
 	}
+	if { $molid=="top" } then { set molid [ molinfo top ] }
+	
+	if  { $filename eq "" } then {
+	    set filename [ molinfo $molid get filename ]
+	    set type [ molinfo $molid get filetype ]
+	}
+	
+	if  {$type ne "vtf" && $type ne "vcf" && $type ne "vsf" } then {
+	    error "error: vtf_read_userdata: $filename is not a VTF/VCF/VSF file"
+	}
+	
+	global vtf_userdata
+	vtf_parse_userdata $filename $type vtf_userdata $molid
     }
 
-#     proc vtf_load { filename } {
-# 	vtf_read_userdata $filename $type 
-#     }
+    proc load { filename } {
+	set molid [mol new userdata.vtf]
+ 	vtf_read_userdata -molid $molid 
+	return $molid
+    }
+}
+
+proc vtf_read_userdata { args } {
+    eval ::VTFTools::read_userdata $args
+}
+
+proc vtf_load { args } {
+    ::VTFTools::load $args
 }

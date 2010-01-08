@@ -1,0 +1,6 @@
+Things to do in VTFTools
+------------------------
+Time-stamp: <2010-01-08 15:10 lenzo>
+
+* User data for a timestep needs to be stored so that the following
+  timesteps can use it as well.

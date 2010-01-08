@@ -1,5 +1,22 @@
+puts "Loading package vtftools..."
 package require vtftools
-vtf_parse_userdata userdata.vtf vtf 0
+
+puts "Loading VTF file and userdata..."
+set molid [vtf_load userdata.vtf]
+
+puts "Dumping all userdata..."
 foreach { key data } [array get vtf_userdata] {
 	puts "$key\t\"$data\""
 }
+
+# Define callback
+proc vtf_show_current_data { name1 molid op } {
+    global vtf_userdata vmd_frame
+    puts "Dumping data for step $vmd_frame($molid)..."
+    foreach { key data } [array get vtf_userdata $molid.step$vmd_frame($molid)*] {
+	puts "$key\t\"$data\""
+    }
+}
+
+puts "Setting up callback to dump current userdata..."
+trace add variable vmd_frame($molid) write vtf_show_current_data
