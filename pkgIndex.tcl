@@ -9,4 +9,4 @@
 # full path name of this file's directory.
 
 package ifneeded vtfplugin 2.0 [list load [file join $dir vtfplugin.so]]
-package ifneeded vtftools 2.0 [list source [file join $dir vtftools.tcl]]
+package ifneeded vtftools 1.0 [list source [file join $dir vtftools.tcl]]

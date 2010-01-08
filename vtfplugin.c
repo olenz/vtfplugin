@@ -43,10 +43,10 @@ static molfile_atom_t default_atom;
 char* default_userdata;
 const char *molid;
 Tcl_Interp *tcl_interp;
+const char* userdata_varname;
 
 #define VTF_MOLFILE 0
 #define VTF_USERDATA 1
-#define VTF_VAR_USERDATA "vtf_userdata"
 
 /* Plugin data structure to communciate data between the functions. */
 typedef struct {
@@ -90,7 +90,7 @@ void vtf_set_atom_userdata(const int aid, const char* userdata) {
   static char array_index[255];
   if (userdata == NULL) return;
   sprintf(array_index, "%s.atom.%d", molid, aid);
-  Tcl_SetVar2(tcl_interp, VTF_VAR_USERDATA, array_index, userdata, 0);
+  Tcl_SetVar2(tcl_interp, userdata_varname, array_index, userdata, 0);
 }
 
 /* Make the timestep userdata available to Tcl. */
@@ -99,7 +99,7 @@ void vtf_set_timestep_userdata(const unsigned int timestep,
   static char array_index[255];
   if (userdata == NULL || strlen(userdata) == 0) return;
   sprintf(array_index, "%s.step%d", molid, timestep);
-  Tcl_SetVar2(tcl_interp, VTF_VAR_USERDATA, array_index, userdata, 0);
+  Tcl_SetVar2(tcl_interp, userdata_varname, array_index, userdata, 0);
 }
 
 /* Make the coordinate userdata available to Tcl. */
@@ -109,7 +109,7 @@ void vtf_set_coordinate_userdata(const unsigned int timestep,
   static char array_index[255];
   if (userdata == NULL || strlen(userdata) == 0) return;
   sprintf(array_index, "%s.step%d.%d", molid, timestep, aid);
-  Tcl_SetVar2(tcl_interp, VTF_VAR_USERDATA, array_index, userdata, 0);
+  Tcl_SetVar2(tcl_interp, userdata_varname, array_index, userdata, 0);
 }
 
 /***************************************************
@@ -1143,15 +1143,16 @@ static int vtf_parse_userdata(ClientData clientData,
   char result[255];
   int rc;
 
-  if (argc != 4) {
-    sprintf(result, "wrong # args: should be \"%s fileName fileType molId\"", argv[0]);
+  if (argc != 5) {
+    sprintf(result, "wrong # args: should be \"%s fileName fileType varName molId\"", argv[0]);
     Tcl_SetResult(interp, result, TCL_VOLATILE);
     return TCL_ERROR;
   }
 
   file = argv[1];
   type = argv[2];
-  molid = argv[3];
+  userdata_varname = argv[3];
+  molid = argv[4];
   tcl_interp = interp;
   
   d = _vtf_open_file_read(file, type, &natoms, VTF_USERDATA);
@@ -1173,9 +1174,16 @@ static int vtf_parse_userdata(ClientData clientData,
 }
 
 int Vtfplugin_Init(Tcl_Interp *interp) {
+  char version_string[20];
+
   /* Set up for stubs. */
   if (Tcl_InitStubs(interp, "8.1", 0) == NULL) {
     Tcl_SetResult(interp, "Tcl_InitStubs failed", TCL_STATIC);
+    return TCL_ERROR;
+  }
+
+  sprintf(version_string, "%d.%d", VERSION_MAJOR, VERSION_MINOR);
+  if (Tcl_PkgProvide(interp, "vtfplugin", version_string) == TCL_ERROR) {
     return TCL_ERROR;
   }
 
