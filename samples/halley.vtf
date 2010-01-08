@@ -1,0 +1,15 @@
+# Structure block
+atom 0 radius 0.3 type 1
+atom 1 radius 0.2 type 2
+atom 2 radius 0.25 type 3
+atom 3 radius 0.15 type 4 
+timestep indexed
+0 0 0 0
+1 0 1 0
+2 0 5.36 0
+3 34.75 0 0
+timestep indexed
+0 -1.16619e-07 4.52187e-06 0
+1 -0.479427 0.877589 0
+2 -0.212443 5.35565 0
+3 34.7499 0.0148 0 
