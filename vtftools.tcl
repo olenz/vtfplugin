@@ -45,7 +45,7 @@ namespace eval ::VTFTools:: {
     }
 
     proc load { filename } {
-	set molid [mol new userdata.vtf]
+	set molid [mol new $filename]
  	vtf_read_userdata -molid $molid 
 	return $molid
     }

@@ -3,20 +3,20 @@
 # plugins/include of the VMD installation directory.
 
 #qwghlm:
-#VMDDIR=/usr/local/lib/vmd
+VMDDIR=/usr/local/lib/vmd
 
 #MPIP:
-VMDDIR=/usr/people/lenzo/software/lib/vmd
+#VMDDIR=/usr/people/lenzo/software/lib/vmd
 
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available
 _USE_ZLIB=1
 
-CPPFLAGS=-I$(VMDINCLUDES)
+CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
 
 CC=gcc
 CFLAGS=-Wall -g -O0 -fPIC -pedantic
-LDFLAGS=-ltcl8.4
+LDFLAGS=-ltcl8.5
 SHLD=$(CC)
 SHLDFLAGS=-shared $(LDFLAGS)
 
