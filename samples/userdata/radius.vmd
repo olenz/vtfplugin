@@ -1,0 +1,40 @@
+# EXAMPLE VTFTOOLS USERDATA SCRIPT
+# Read in a vtf file that has changing radii for each atom in each
+# timestep. Sets the radii for all atoms in each timestep and also
+# sets the beta value to the radius.
+
+package require vtftools
+
+# load the vtf file
+vtf_load radius.vtf
+
+# set the molecule id
+set molid [ molinfo "top" ]
+
+# create the selection
+set radius_update_sel [ atomselect $molid "all" ]
+
+# this is the callback that is called upon a change in the frame
+proc change_radius_callback { name molid op } {
+    global vmd_frame vtf_userdata radius_update_sel
+    set pattern "$molid.step$vmd_frame($molid)."
+    set radii {}
+    set sel $radius_update_sel
+    $sel update
+    foreach pid [ $sel list ] {
+	lappend radii $vtf_userdata($pattern$pid)
+    }
+
+    $sel set radius $radii
+    $sel set beta $radii
+}
+
+# setup the trace
+trace add variable vmd_frame($molid) write change_radius_callback
+
+change_radius_callback {} $molid {}
+
+mol modstyle 0 $molid vdw
+mol modcolor 0 $molid beta
+
+pbc box
