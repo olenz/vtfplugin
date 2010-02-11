@@ -910,12 +910,12 @@ static int vtf_read_next_timestep(void *data,
 	d->coords[aid*3] = x;
 	d->coords[aid*3+1] = y;
 	d->coords[aid*3+2] = z;
-	aid++;
 	if (d->read_mode == VTF_USERDATA) {
 	  /* the rest of the line is userdata */
 	  line += n;
 	  vtf_set_coordinate_userdata(d->timestep, aid, line);
 	}
+	aid++;
       } else {
 	vtf_error("too many atom coordinates in ordered timestep block", line);
 	return MOLFILE_ERROR;
