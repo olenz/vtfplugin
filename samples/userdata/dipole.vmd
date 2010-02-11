@@ -1,0 +1,5 @@
+puts "Loading package vtftools..."
+package require vtftools
+
+puts "Loading VTF file and userdata..."
+set molid [vtf_load dipole.vtf]
