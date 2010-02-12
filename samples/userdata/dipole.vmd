@@ -3,3 +3,8 @@ package require vtftools
 
 puts "Loading VTF file and userdata..."
 set molid [vtf_load dipole.vtf]
+
+puts "Loading Dipolescript..."
+play "draw_dipoles.tcl"
+
+overwrite_atoms top [doublecone top]

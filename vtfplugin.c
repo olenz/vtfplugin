@@ -258,6 +258,10 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   }
   s += n;
   rest_is_userdata = 0;
+
+#ifdef DEBUG
+  printf("\tatom record\n");
+#endif
   
   /* handle the keywords */
   while (sscanf(s, "%255s %n", keyword, &n) == 1) {
@@ -430,6 +434,10 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     if (rest_is_userdata) break;
   }
 
+#ifdef DEBUG
+  printf("\tparsed keywords\n");
+#endif
+
   if (rest_is_userdata) userdata = s;
 
   /* HANDLE THE AID SPECIFIER */
@@ -437,7 +445,11 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   /* if the specifier is "default", set the default_atom */
   if (aid_specifier[0] == 'd') {
     default_atom = atom;
-    default_userdata = strdup(userdata);
+    if (userdata != NULL)
+      default_userdata = strdup(userdata);
+#ifdef DEBUG
+    printf("\tdefine default atom\n");
+#endif
   } else {
     /* otherwise parse the aid specifier */
     s = aid_specifier;
@@ -645,6 +657,9 @@ static void vtf_parse_structure(vtf_data *d) {
   do {
     line = vtf_getline(d->file);
     if (line == NULL) break;
+#ifdef DEBUG
+    printf("parsing line %d: \"%s\"\n", vtf_lineno, line);
+#endif
     switch (tolower(line[0])) {
       /* ATOM RECORD */
     case 'a': {

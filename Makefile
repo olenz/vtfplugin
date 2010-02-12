@@ -11,6 +11,7 @@ VMDDIR=/usr/local/lib/vmd
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available
 _USE_ZLIB=1
+DEBUG=1
 
 CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
 
@@ -29,6 +30,10 @@ ifdef _USE_ZLIB
 # if you want to enable compressed files, use these
 CFLAGS += -D_USE_ZLIB
 LDFLAGS += -lz
+endif
+
+ifdef DEBUG
+CFLAGS += -DDEBUG
 endif
 
 all: vtftest vtfplugin.so
