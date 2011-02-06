@@ -2,18 +2,18 @@
 # Typically, these files can be found in the subdir 
 # plugins/include of the VMD installation directory.
 
-#qwghlm:
-VMDDIR=/usr/local/lib/vmd
+# lancre:
+# VMDDIR=/home/olenz/software/lib/vmd
+#CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
 
-#MPIP:
-#VMDDIR=/usr/people/lenzo/software/lib/vmd
+# ICP:
+VMDDIR=/usr/local/lib/vmd
+CPPFLAGS=-I$(VMDINCLUDES)
 
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available
 _USE_ZLIB=1
 DEBUG=1
-
-CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
 
 CC=gcc
 CFLAGS=-Wall -g -O0 -fPIC -pedantic
