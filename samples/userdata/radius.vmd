@@ -5,36 +5,45 @@
 
 package require vtftools
 
-# load the vtf file
-vtf_load radius.vtf
-
-# set the molecule id
-set molid [ molinfo "top" ]
-
-# create the selection
-set radius_update_sel [ atomselect $molid "all" ]
-
 # this is the callback that is called upon a change in the frame
 proc change_radius_callback { name molid op } {
     global vmd_frame vtf_userdata radius_update_sel
     set pattern "$molid.step$vmd_frame($molid)."
     set radii {}
-    set sel $radius_update_sel
-    $sel update
-    foreach pid [ $sel list ] {
+    $radius_update_sel update
+    foreach pid [ $radius_update_sel list ] {
 	lappend radii $vtf_userdata($pattern$pid)
     }
 
-    $sel set radius $radii
-    $sel set beta $radii
+    $radius_update_sel set radius $radii
+    $radius_update_sel set beta $radii
 }
 
-# setup the trace
-trace add variable vmd_frame($molid) write change_radius_callback
+proc sample_load { filename } {
+    global radius_update_sel
 
-change_radius_callback {} $molid {}
+    # load the vtf file
+    vtf_load $filename
+    
+    # set the molecule id
+    set molid [ molinfo "top" ]
+
+    # create the selection
+    set radius_update_sel [ uplevel atomselect $molid "all" ]
+
+    # setup the trace
+    uplevel trace add variable vmd_frame($molid) write change_radius_callback
+
+    # call it once
+    change_radius_callback {} $molid {}
+
+    return $molid
+}
+
+set molid [sample_load radius.vtf]
 
 mol modstyle 0 $molid vdw
 mol modcolor 0 $molid beta
 
 pbc box
+
