@@ -7,13 +7,13 @@
 # Author:
 #   Olaf Lenz <olaf _at_ lenz.name>
 #
-# $Id$
-#
 package provide vtftools 1.0
 package require vtfplugin 2.0
 
 namespace eval ::VTFTools:: {
     namespace export *
+
+    variable userdata
 
     proc read_userdata { args } {
 	set molid "top"
@@ -40,8 +40,8 @@ namespace eval ::VTFTools:: {
 	    error "error: vtf_read_userdata: $filename is not a VTF/VCF/VSF file"
 	}
 	
-	global vtf_userdata
-	vtf_parse_userdata $filename $type vtf_userdata $molid
+	variable userdata
+	vtf_parse_userdata $filename $type ::VTFTools::userdata $molid
     }
 
     proc load { filename } {

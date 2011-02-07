@@ -7,12 +7,12 @@ package require vtftools
 
 # this is the callback that is called upon a change in the frame
 proc change_radius_callback { name molid op } {
-    global vmd_frame vtf_userdata radius_update_sel
+    global vmd_frame radius_update_sel
     set pattern "$molid.step$vmd_frame($molid)."
     set radii {}
     $radius_update_sel update
     foreach pid [ $radius_update_sel list ] {
-	lappend radii $vtf_userdata($pattern$pid)
+	lappend radii $::VTFTools::userdata($pattern$pid)
     }
 
     $radius_update_sel set radius $radii
