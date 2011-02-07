@@ -1,10 +1,31 @@
 puts "Loading package vtftools..."
 package require vtftools
+package require moregraphics
 
 puts "Loading VTF file and userdata..."
-set molid [vtf_load dipole.vtf]
+set molid [vtf_load dipoles.vtf]
 
-puts "Loading Dipolescript..."
-play "draw_dipoles.tcl"
+# Now $vtf_userdata contains an array with all userdata
 
-overwrite_atoms top [doublecone top]
+# Set up callback function that updates dipoles
+proc update_dipoles_callback { name molid op } {
+    global vmd_frame dipoles_sel dipoles_gids
+    set pattern "$molid.step$vmd_frame($molid)."
+    $dipoles_sel update
+    set pids [$dipoles_sel list]
+    set positions [$dipoles_sel get {x y z}]
+
+    foreach pid $pids pos $positions {
+	set vec $::VTFTools::userdata($pattern$pid)
+	::moregraphics::arrow pos $pos dir $vec replace dipoles_gids newgids
+    }
+
+    set dipoles_gids $newgids
+}
+
+set dipoles_sel [atomselect $molid "all"]
+
+puts "Selected [$dipoles_sel num] atoms."
+trace add variable vmd_frame($molid) write update_dipoles_callback
+
+update_dipoles_callback {} $molid {}
