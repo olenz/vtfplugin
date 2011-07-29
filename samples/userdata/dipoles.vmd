@@ -5,7 +5,7 @@ package require moregraphics
 puts "Loading VTF file and userdata..."
 set molid [vtf_load dipoles.vtf]
 
-# Now $vtf_userdata contains an array with all userdata
+# Now $::VTFTools::userdata contains an array with all userdata
 
 # Set up callback function that updates dipoles
 proc update_dipoles_callback { name molid op } {

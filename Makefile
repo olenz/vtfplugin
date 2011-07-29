@@ -13,7 +13,7 @@ CPPFLAGS=-I$(VMDINCLUDES)
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available
 _USE_ZLIB=1
-DEBUG=1
+#DEBUG=1
 
 CC=gcc
 CFLAGS=-Wall -g -O0 -fPIC -pedantic
