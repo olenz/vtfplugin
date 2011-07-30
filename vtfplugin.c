@@ -962,6 +962,7 @@ static int vtf_read_next_timestep(void *data,
 	break;
       }
 
+	/* USER DATA RECORD */
       case 'u': {
 	/* Remove the "user" keyword */
 	sscanf(line, "%255s %n", s, &n);
