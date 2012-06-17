@@ -6,6 +6,12 @@ VMD file reader plugin for:
 - VTF structure format (VSF)
 - VTF coordinate format (VCF)
 - VTF trajectory format (VTF)
+
+This code has two main entry points. The functions used in
+VMDPLUGIN_init() are the entry points for the VMD plugin API, while
+the function vtf_parse_userdata is the entry point when the plugin is
+called from the Tcl module "vtftools.tcl" to allow reading in userdata
+into Tcl data structures.
 */
 #include <molfile_plugin.h>
 #include <stdlib.h>
@@ -527,9 +533,9 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 /***************************************************
  * Parse BOND
  ***************************************************/
-/* Parse bond data from line. 
-   Return MOLFILE_SUCCESS, if data was sucessfully parsed, 
-   MOLFILE_ERROR if an error occured. */
+/* Parse bond data from line.  Called by vtf_parse_structure(). Return
+   MOLFILE_SUCCESS, if data was sucessfully parsed, MOLFILE_ERROR if
+   an error occured. */
 static int vtf_parse_bond(char *line, vtf_data *d) {
   char *s;
   int n;
@@ -589,9 +595,9 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
 /***************************************************
  * Parse PBC
  ***************************************************/
-/* Parse periodic boundary condition data from line. 
-   Return MOLFILE_SUCCESS, if data was sucessfully parsed, 
-   MOLFILE_ERROR if an error occured. */
+/* Parse periodic boundary condition data from line. Called by
+   vtf_parse_structure().  Return MOLFILE_SUCCESS, if data was
+   sucessfully parsed, MOLFILE_ERROR if an error occured. */
 static int vtf_parse_pbc(char *line, vtf_data *d) {
   char *s;
   int n;
@@ -612,9 +618,9 @@ static int vtf_parse_pbc(char *line, vtf_data *d) {
   return MOLFILE_SUCCESS;
 } 
 
-/* Parse timestep command from line. 
-   Return MOLFILE_SUCCESS, if it was sucessfully parsed, 
-   MOLFILE_ERROR if an error occured. */
+/* Parse timestep command from line. Called by vtf_parse_structure().
+   Return MOLFILE_SUCCESS, if it was sucessfully parsed, MOLFILE_ERROR
+   if an error occured. */
 static int vtf_parse_timestep(char *line, vtf_data *d) {
   if (strlen(line) == 0) {
     d->timestep_mode = TIMESTEP_ORDERED;
@@ -631,6 +637,7 @@ static int vtf_parse_timestep(char *line, vtf_data *d) {
   return MOLFILE_SUCCESS;
 }
 
+/* Called by _vtf_open_file_read() to parse the structure data. */
 static void vtf_parse_structure(vtf_data *d) {
   char *line;			/* next line in the file */
   char s[255];
@@ -745,11 +752,14 @@ static void vtf_parse_structure(vtf_data *d) {
 /***************************************************
  * Open file and parse structure info
  ***************************************************/
-/* Opens the file for reading. 
-   To determine the number of atoms in the file, it is necessary to
-   parse the structure information, anyway. Therefore, this function
-   will do the parsing and save the information in the plugibs data
-   structure.
+/* Opens the file for reading.  To determine the number of atoms in
+   the file, it is necessary to parse the structure information,
+   anyway. Therefore, this function will parse the structure data and
+   save the information in the plugin's data structure.
+
+   The read_mode defines whether the file is read from VMD via the
+   plugin API (VTF_MOLFILE) to read structure and timestep data, or
+   via the vtftools to read userdata (VTF_USERDATA).
 
    The function vtf_open_file_read() that is actually called by the
    molfile reader plugin is defined below this function.
@@ -829,7 +839,7 @@ vtf_open_file_read(const char *filepath,
   return _vtf_open_file_read(filepath, filetype, natoms, VTF_MOLFILE);
 }
 
-
+/* */
 static void vtf_close_file_read(void *data) {
   vtf_data *d;
 
@@ -851,6 +861,8 @@ static void vtf_close_file_read(void *data) {
   free(d);
 }
 
+/* Read the next timestep from the file and store what has been read
+   into the ts datastructure. */
 static int vtf_read_next_timestep(void *data, 
 				  int natoms, 
 				  molfile_timestep_t *ts) {
@@ -975,7 +987,7 @@ static int vtf_read_next_timestep(void *data,
 	break;
       }
 	
-	/* TIMESTEP RECORD*/
+	/* TIMESTEP RECORD */
       case 'c': 
       case 't': {
 	/* Remove the "timestep" or "coordinates" keyword */

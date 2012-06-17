@@ -6,9 +6,10 @@
 #
 # Author:
 #   Olaf Lenz <olaf _at_ lenz.name>
+#   Olaf Lenz <olenz _at_ icp _dot_ uni-stuttgart _dot_ de>
 #
 package provide vtftools 1.0
-package require vtfplugin 2.0
+package require vtfplugin 2.1
 
 namespace eval ::VTFTools:: {
     namespace export *
@@ -35,7 +36,6 @@ namespace eval ::VTFTools:: {
 	    set filename [ molinfo $molid get filename ]
 	    set type [ molinfo $molid get filetype ]
 	}
-	
 	if  {$type ne "vtf" && $type ne "vcf" && $type ne "vsf" } then {
 	    error "error: vtf_read_userdata: $filename is not a VTF/VCF/VSF file"
 	}
@@ -46,7 +46,7 @@ namespace eval ::VTFTools:: {
 
     proc load { filename } {
 	set molid [mol new $filename]
- 	vtf_read_userdata -molid $molid 
+ 	read_userdata -molid $molid 
 	return $molid
     }
 }
