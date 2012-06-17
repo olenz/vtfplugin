@@ -1,5 +1,6 @@
 atom default	radius 0.8 name H
-atom 0,2,4	radius 1.0 name N
+atom 0,2,4	name S
+atom 0,2,4	radius 2.0 
 atom 6:10	radius 0.5 name O
 bond 0:5,0::5,6::10
 

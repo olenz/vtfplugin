@@ -3,12 +3,12 @@
 # plugins/include of the VMD installation directory.
 
 # lancre:
-# VMDDIR=/home/olenz/software/lib/vmd
-#CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
+VMDDIR=/home/olenz/software/lib/vmd
+CPPFLAGS=-I$(VMDINCLUDES) -I/usr/include/tcl8.5
 
 # ICP:
-VMDDIR=/usr/local/lib/vmd
-CPPFLAGS=-I$(VMDINCLUDES)
+#VMDDIR=/usr/local/lib/vmd
+#CPPFLAGS=-I$(VMDINCLUDES)
 
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available

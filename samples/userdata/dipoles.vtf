@@ -1,4 +1,4 @@
-atom 0:10 radius 1.0 name H user doublecone top
+atom 0:10 radius 1.0 name H data doublecone top
 
 timestep 
 pbc 10.0 10.0 10.0
