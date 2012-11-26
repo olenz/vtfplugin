@@ -101,7 +101,7 @@ void vtf_set_atom_userdata(const int aid, const char* userdata) {
 
 /* Make the timestep userdata available to Tcl. */
 void vtf_set_timestep_userdata(const unsigned int timestep,
-			       const char* userdata) {
+                               const char* userdata) {
   static char array_index[255];
   if (userdata == NULL || strlen(userdata) == 0) return;
   sprintf(array_index, "%s.step%d", molid, timestep);
@@ -110,8 +110,8 @@ void vtf_set_timestep_userdata(const unsigned int timestep,
 
 /* Make the coordinate userdata available to Tcl. */
 void vtf_set_coordinate_userdata(const unsigned int timestep, 
-				 const int aid, 
-				 const char* userdata) {
+                                 const int aid, 
+                                 const char* userdata) {
   static char array_index[255];
   if (userdata == NULL || strlen(userdata) == 0) return;
   sprintf(array_index, "%s.step%d.%d", molid, timestep, aid);
@@ -123,8 +123,8 @@ void vtf_set_coordinate_userdata(const unsigned int timestep,
  ***************************************************/
 static void vtf_error(const char *msg, const char *line) {
   char message[255];
-  sprintf(message, "vtfplugin:%d: error: %s: %-20s\n", 	  
-	  vtf_lineno, msg, line);
+  sprintf(message, "vtfplugin:%d: error: %s: %-20s\n",    
+          vtf_lineno, msg, line);
 
 /* #if vmdplugin_ABIVERSION > 13 */
 /*   if (cons_fputs) */
@@ -150,7 +150,7 @@ static char *vtf_getline(VTFFILE file) {
   static char *buffer = NULL;
   static int buffer_size = 0;
   char *s;   /* pointer to the place where the line will be read to */
-  int bytes_left;	       /* the number of bytes that are left */
+  int bytes_left;              /* the number of bytes that are left */
   int l;
 
   if (buffer == NULL) {
@@ -191,13 +191,13 @@ static char *vtf_getline(VTFFILE file) {
       s[l+1] = '\0';
       /* check the previous char, whether it is '\' */
       if (l >= 0 && s[l] == '\\') {
-	/* last char before is continuation char */
-	/* position s to the continuation char */
-	bytes_left -= l+1;
-	s += l+1;
+        /* last char before is continuation char */
+        /* position s to the continuation char */
+        bytes_left -= l+1;
+        s += l+1;
       } else 
-	/* otherwise, the line is complete */
-	break;
+        /* otherwise, the line is complete */
+        break;
     } else {
       /* last char is not a newline */
       /* enlarge the buffer */
@@ -276,8 +276,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'n': {
       /* name */
       if (sscanf(s, "%16s %n", atom.name, &n) < 1) {
-	vtf_error("could not get name in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get name in atom record", line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -285,8 +285,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 't': {
       /* type */
       if (sscanf(s, "%16s %n", atom.type, &n) < 1) {
-	vtf_error("could not get type in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get type in atom record", line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -294,31 +294,31 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'r': {
       /* resname, resid, radius */
       if (strlen(keyword) == 1 || 
-	  strncmp(keyword, "rad", 3) == 0) { 
-	/* radius */
-	if (sscanf(s, "%f %n", &atom.radius, &n) < 1) {
-	  vtf_error("could not get radius in atom record", line);
-	  return MOLFILE_ERROR;
-	}
-	d->optflags |= MOLFILE_RADIUS;
+          strncmp(keyword, "rad", 3) == 0) { 
+        /* radius */
+        if (sscanf(s, "%f %n", &atom.radius, &n) < 1) {
+          vtf_error("could not get radius in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_RADIUS;
       } else if (strcmp(keyword, "resid") == 0) {
-	/* resid */
-	if (sscanf(s, "%d %n", &atom.resid, &n) < 1) {
-	  vtf_error("could not get resid in atom record", line);
-	  return MOLFILE_ERROR;
-	}
+        /* resid */
+        if (sscanf(s, "%d %n", &atom.resid, &n) < 1) {
+          vtf_error("could not get resid in atom record", line);
+          return MOLFILE_ERROR;
+        }
       } else if (strcmp(keyword, "res") == 0 || 
-		 strcmp(keyword, "resname") == 0) {
-	/* resname */
-	if (sscanf(s, "%8s %n", atom.resname, &n) < 1) {
-	  vtf_error("could not get resname in atom record", line);
-	  return MOLFILE_ERROR;
-	}
+                 strcmp(keyword, "resname") == 0) {
+        /* resname */
+        if (sscanf(s, "%8s %n", atom.resname, &n) < 1) {
+          vtf_error("could not get resname in atom record", line);
+          return MOLFILE_ERROR;
+        }
       } else {
-	strcpy(msg, "unrecognized keyword in atom record: ");
-	strncat(msg, keyword, 200);
-	vtf_error(msg, line);
-	return MOLFILE_ERROR;
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -326,8 +326,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 's': {
       /* segid */
       if (sscanf(s, "%8s %n", atom.segid, &n) < 1) {
-	vtf_error("could not get segid in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get segid in atom record", line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -335,8 +335,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'i': {
       /* insertion */
       if (sscanf(s, "%2s %n", atom.insertion, &n) < 1) {
-	vtf_error("could not get insertion in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get insertion in atom record", line);
+        return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_INSERTION;
       s += n;
@@ -345,27 +345,27 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'c': {
       /* chain, charge */
       if (strlen(keyword) == 1 || 
-	  strcmp(keyword, "chain") == 0) {
-	if (sscanf(s, "%2s %n", atom.chain, &n) < 1) {
-	  vtf_error("could not get chain in atom record", line);
-	  return MOLFILE_ERROR;
-	}
+          strcmp(keyword, "chain") == 0) {
+        if (sscanf(s, "%2s %n", atom.chain, &n) < 1) {
+          vtf_error("could not get chain in atom record", line);
+          return MOLFILE_ERROR;
+        }
       }
     } /* if "chain" is not recognized, continue with next case */
     case 'q': {
       /* q and charge */
       if (strlen(keyword) == 1 ||
-	  strcmp(keyword, "charge") == 0) {
-	if (sscanf(s, "%f %n", &atom.charge, &n) < 1) {
-	  vtf_error("could not get charge in atom record", line);
-	  return MOLFILE_ERROR;
-	}
-	d->optflags |= MOLFILE_CHARGE;
+          strcmp(keyword, "charge") == 0) {
+        if (sscanf(s, "%f %n", &atom.charge, &n) < 1) {
+          vtf_error("could not get charge in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_CHARGE;
       } else {
-	strcpy(msg, "unrecognized keyword in atom record: ");
-	strncat(msg, keyword, 200);
-	vtf_error(msg, line);
-	return MOLFILE_ERROR;
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -373,23 +373,23 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'a': {
       /* altloc, atomicnumber */
       if (strlen(keyword)== 1 || 
-	  strcmp(keyword, "atomicnumber") == 0) {
-	if (sscanf(s, "%d %n", &atom.atomicnumber, &n) < 1) {
-	  vtf_error("could not get atomicnumber in atom record", line);
-	  return MOLFILE_ERROR;
-	}
-	d->optflags |= MOLFILE_ATOMICNUMBER;
+          strcmp(keyword, "atomicnumber") == 0) {
+        if (sscanf(s, "%d %n", &atom.atomicnumber, &n) < 1) {
+          vtf_error("could not get atomicnumber in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_ATOMICNUMBER;
       } else if (strcmp(keyword, "altloc")) {
-	if (sscanf(s, "%2s %n", atom.altloc, &n) < 1) {
-	  vtf_error("could not get altloc in atom record", line);
-	  return MOLFILE_ERROR;
-	}
-	d->optflags |= MOLFILE_ALTLOC;
+        if (sscanf(s, "%2s %n", atom.altloc, &n) < 1) {
+          vtf_error("could not get altloc in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_ALTLOC;
       } else { 
-	strcpy(msg, "unrecognized keyword in atom record: ");
-	strncat(msg, keyword, 200);
-	vtf_error(msg, line);
-	return MOLFILE_ERROR;
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
       }
       s += n;
       break;
@@ -397,8 +397,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'o': {
       /* occupancy */
       if (sscanf(s, "%f %n", &atom.occupancy, &n) < 1) {
-	vtf_error("could not get occupancy in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get occupancy in atom record", line);
+        return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_OCCUPANCY;
       s += n;
@@ -407,8 +407,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'b': {
       /* bfactor */
       if (sscanf(s, "%f %n", &atom.bfactor, &n) < 1) {
-	vtf_error("could not get bfactor in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get bfactor in atom record", line);
+        return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_BFACTOR;
       s += n;
@@ -417,8 +417,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'm': {
       /* mass */
       if (sscanf(s, "%f %n", &atom.mass, &n) < 1) {
-	vtf_error("could not get mass in atom record", line);
-	return MOLFILE_ERROR;
+        vtf_error("could not get mass in atom record", line);
+        return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_MASS;
       s += n;
@@ -462,53 +462,53 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     while (1) {
       from = d->natoms;
       if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
-	/* range given */
-	if (from > to) { 
-	  vtf_error("bad range specifier (from > to):", s); 
-	  return MOLFILE_ERROR;
-	}
-	if (d->read_mode == VTF_MOLFILE) {
-	  d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
-	  /* TODO: error handling */
-	  /* fill up with default atoms */
-	  for (aid = d->natoms; aid < to; aid++)
-	    d->atoms[aid] = default_atom;
-	  /* create new atoms */
-	  if (to+1 > d->natoms) d->natoms = to+1;
-	  /* TODO: error handling */
-	  for (aid = from; aid <= to; aid++)
-	    d->atoms[aid] = atom;
-	} else {
-	  /* fill up with default userdata */
-	  for (aid = d->natoms; aid < to; aid++)
-	    vtf_set_atom_userdata(aid, default_userdata);
-	  /* create new userdata */
-	  if (to+1 > d->natoms) d->natoms = to+1;
-	  for (aid = from; aid <= to; aid++)
-	    vtf_set_atom_userdata(aid, userdata);
-	}
+        /* range given */
+        if (from > to) { 
+          vtf_error("bad range specifier (from > to):", s); 
+          return MOLFILE_ERROR;
+        }
+        if (d->read_mode == VTF_MOLFILE) {
+          d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
+          /* TODO: error handling */
+          /* fill up with default atoms */
+          for (aid = d->natoms; aid < to; aid++)
+            d->atoms[aid] = default_atom;
+          /* create new atoms */
+          if (to+1 > d->natoms) d->natoms = to+1;
+          /* TODO: error handling */
+          for (aid = from; aid <= to; aid++)
+            d->atoms[aid] = atom;
+        } else {
+          /* fill up with default userdata */
+          for (aid = d->natoms; aid < to; aid++)
+            vtf_set_atom_userdata(aid, default_userdata);
+          /* create new userdata */
+          if (to+1 > d->natoms) d->natoms = to+1;
+          for (aid = from; aid <= to; aid++)
+            vtf_set_atom_userdata(aid, userdata);
+        }
       } else if (sscanf(s, "%u%n", &to, &n) == 1) {
-	/* single aid given */
-	if (d->read_mode == VTF_MOLFILE) {
-	  d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
-	  /* TODO: error handling */
-	  /* fill up with default atoms */
-	  for (aid = d->natoms; aid < to; aid++)
-	    d->atoms[aid] = default_atom;
-	  /* create the new atom */
-	  if (to+1 > d->natoms) d->natoms = to+1;
-	  d->atoms[to] = atom;
-	} else {
-	  /* fill up with default userdata */
-	  for (aid = d->natoms; aid < to; aid++)
-	    vtf_set_atom_userdata(aid, default_userdata);
-	  if (to+1 > d->natoms) d->natoms = to+1;
-	  /* create new userdata */
-	  vtf_set_atom_userdata(to, userdata);
-	}
+        /* single aid given */
+        if (d->read_mode == VTF_MOLFILE) {
+          d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
+          /* TODO: error handling */
+          /* fill up with default atoms */
+          for (aid = d->natoms; aid < to; aid++)
+            d->atoms[aid] = default_atom;
+          /* create the new atom */
+          if (to+1 > d->natoms) d->natoms = to+1;
+          d->atoms[to] = atom;
+        } else {
+          /* fill up with default userdata */
+          for (aid = d->natoms; aid < to; aid++)
+            vtf_set_atom_userdata(aid, default_userdata);
+          if (to+1 > d->natoms) d->natoms = to+1;
+          /* create new userdata */
+          vtf_set_atom_userdata(to, userdata);
+        }
       } else {
-	vtf_error("bad atom specifier", s);
-	return MOLFILE_ERROR;
+        vtf_error("bad atom specifier", s);
+        return MOLFILE_ERROR;
       }
 
       /* advance s */
@@ -519,8 +519,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 
       /* otherwise the next char should be a ',' */
       if (s[0] != ',') {
-	vtf_error("bad atom specifier in line", line);
-	return MOLFILE_ERROR;
+        vtf_error("bad atom specifier in line", line);
+        return MOLFILE_ERROR;
       }
       /* skip the ',' */
       s++;
@@ -547,8 +547,8 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
     if (sscanf(s, "%u::%u%n", &from, &to, &n) == 2) {
       /* chain specifier */
       if (from > to) {
-	vtf_error("bad chain specifier (from > to):", s); 
-	return MOLFILE_ERROR;
+        vtf_error("bad chain specifier (from > to):", s); 
+        return MOLFILE_ERROR;
       }
       bid = d->nbonds;
       d->nbonds += to-from;
@@ -556,10 +556,10 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
       d->to = realloc(d->to, d->nbonds*sizeof(int));
       /* TODO: error handling */
       for (aid = from; aid < to; aid++) {
-	/*printf("creating bond from %d to %d\n", aid, aid+1);*/
-	d->from[bid] = aid+1;
-	d->to[bid] = aid+2;
-	bid++;
+        /*printf("creating bond from %d to %d\n", aid, aid+1);*/
+        d->from[bid] = aid+1;
+        d->to[bid] = aid+2;
+        bid++;
       }
     } else if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
       /* single bond specifier */
@@ -639,7 +639,7 @@ static int vtf_parse_timestep(char *line, vtf_data *d) {
 
 /* Called by _vtf_open_file_read() to parse the structure data. */
 static void vtf_parse_structure(vtf_data *d) {
-  char *line;			/* next line in the file */
+  char *line;                   /* next line in the file */
   char s[255];
   int n;
   
@@ -683,7 +683,7 @@ static void vtf_parse_structure(vtf_data *d) {
     case '6':
     case '7':
     case '8':
-    case '9':	
+    case '9':   
     case 'd': { 
       /* parse atom */
       d->return_code = vtf_parse_atom(line, d);
@@ -731,7 +731,7 @@ static void vtf_parse_structure(vtf_data *d) {
     }
     }
   } while (line != NULL && 
-	   d->return_code == MOLFILE_SUCCESS);
+           d->return_code == MOLFILE_SUCCESS);
 
   /* test if structure data was parsed */
   if (d->read_mode == VTF_MOLFILE &&
@@ -766,9 +766,9 @@ static void vtf_parse_structure(vtf_data *d) {
 */
 static vtf_data *
 _vtf_open_file_read(const char *filepath, 
-		    const char *filetype, 
-		    int *natoms,
-		    int read_mode) {
+                    const char *filetype, 
+                    int *natoms,
+                    int read_mode) {
   vtf_data *d;
 
   /* printf("Loading file %s\n  of type %s using vtfplugin v%i.%i.\n", 
@@ -834,8 +834,8 @@ _vtf_open_file_read(const char *filepath,
 /* This is the function actually called by the molfile reader plugin */
 static void *
 vtf_open_file_read(const char *filepath, 
-		   const char *filetype, 
-		   int *natoms) {
+                   const char *filetype, 
+                   int *natoms) {
   return _vtf_open_file_read(filepath, filetype, natoms, VTF_MOLFILE);
 }
 
@@ -864,8 +864,8 @@ static void vtf_close_file_read(void *data) {
 /* Read the next timestep from the file and store what has been read
    into the ts datastructure. */
 static int vtf_read_next_timestep(void *data, 
-				  int natoms, 
-				  molfile_timestep_t *ts) {
+                                  int natoms, 
+                                  molfile_timestep_t *ts) {
   vtf_data *d;
   char *line;
   static char s[255];
@@ -905,8 +905,8 @@ static int vtf_read_next_timestep(void *data,
 
     if (line == NULL) {
       if (errno != 0) {
-	perror("vtfplugin");
-	return MOLFILE_ERROR;
+        perror("vtfplugin");
+        return MOLFILE_ERROR;
       }
       break;
     } 
@@ -916,99 +916,99 @@ static int vtf_read_next_timestep(void *data,
       switch (tolower(line[0])) {
       case 'c': 
       case 't':
-	/* Remove the "timestep" or "coordinates" keyword */
-	sscanf(line, "%255s %n", s, &n);
-	line += n;
+        /* Remove the "timestep" or "coordinates" keyword */
+        sscanf(line, "%255s %n", s, &n);
+        line += n;
       case 'i': 
       case 'o': 
-	if (vtf_parse_timestep(line, d) != MOLFILE_SUCCESS)
-	  return MOLFILE_ERROR;
-	line = vtf_getline(d->file);
-	break;
+        if (vtf_parse_timestep(line, d) != MOLFILE_SUCCESS)
+          return MOLFILE_ERROR;
+        line = vtf_getline(d->file);
+        break;
       default:
-	/* if this is already a coordinate line, expect an ordered block */
-	d->timestep_mode = TIMESTEP_ORDERED;
+        /* if this is already a coordinate line, expect an ordered block */
+        d->timestep_mode = TIMESTEP_ORDERED;
       }
     }
 
     /* parse timestep data */
     if (d->timestep_mode == TIMESTEP_ORDERED 
-	&& sscanf(line, " %f %f %f %n", &x, &y, &z, &n) == 3) {
+        && sscanf(line, " %f %f %f %n", &x, &y, &z, &n) == 3) {
       if (aid < natoms) {
-	d->coords[aid*3] = x;
-	d->coords[aid*3+1] = y;
-	d->coords[aid*3+2] = z;
-	if (d->read_mode == VTF_USERDATA) {
-	  /* the rest of the line is userdata */
-	  line += n;
-	  vtf_set_coordinate_userdata(d->timestep, aid, line);
-	}
-	aid++;
+        d->coords[aid*3] = x;
+        d->coords[aid*3+1] = y;
+        d->coords[aid*3+2] = z;
+        if (d->read_mode == VTF_USERDATA) {
+          /* the rest of the line is userdata */
+          line += n;
+          vtf_set_coordinate_userdata(d->timestep, aid, line);
+        }
+        aid++;
       } else {
-	vtf_error("too many atom coordinates in ordered timestep block", line);
-	return MOLFILE_ERROR;
+        vtf_error("too many atom coordinates in ordered timestep block", line);
+        return MOLFILE_ERROR;
       }
     } else if (d->timestep_mode == TIMESTEP_INDEXED 
-	       && sscanf(line, " %u %f %f %f %n", 
-			 &aid, &x, &y, &z, &n) == 4) {
+               && sscanf(line, " %u %f %f %f %n", 
+                         &aid, &x, &y, &z, &n) == 4) {
       if (aid < natoms) {
-	d->coords[aid*3] = x;
-	d->coords[aid*3+1] = y;
-	d->coords[aid*3+2] = z;
-	if (d->read_mode == VTF_USERDATA) {
-	  /* the rest of the line is userdata */
-	  line += n;
-	  vtf_set_coordinate_userdata(d->timestep, aid, line);
-	}
+        d->coords[aid*3] = x;
+        d->coords[aid*3+1] = y;
+        d->coords[aid*3+2] = z;
+        if (d->read_mode == VTF_USERDATA) {
+          /* the rest of the line is userdata */
+          line += n;
+          vtf_set_coordinate_userdata(d->timestep, aid, line);
+        }
       } else {
-	vtf_error("atom id too large in indexed timestep block", line);
-	return MOLFILE_ERROR;
+        vtf_error("atom id too large in indexed timestep block", line);
+        return MOLFILE_ERROR;
       }
     } else switch (tolower(line[0])) {
-	/* PBC/UNITCELL RECORD */
+        /* PBC/UNITCELL RECORD */
       case 'u':
       case 'p': {
-	/* Remove the "pbc"/"unitcell" keyword */
-	sscanf(line, "%255s %n", s, &n);
-	line += n;
-	if (vtf_parse_pbc(line, d) != MOLFILE_SUCCESS) 
-	  return MOLFILE_ERROR;
-	break;
+        /* Remove the "pbc"/"unitcell" keyword */
+        sscanf(line, "%255s %n", s, &n);
+        line += n;
+        if (vtf_parse_pbc(line, d) != MOLFILE_SUCCESS) 
+          return MOLFILE_ERROR;
+        break;
       }
 
-	/* USER DATA RECORD */
+        /* USER DATA RECORD */
       case 'd': {
-	/* Remove the "data" keyword */
-	sscanf(line, "%255s %n", s, &n);
-	if (d->read_mode == VTF_USERDATA) {
-	  line += n;
-	  vtf_set_timestep_userdata(d->timestep, line);
-	}
-	break;
+        /* Remove the "data" keyword */
+        sscanf(line, "%255s %n", s, &n);
+        if (d->read_mode == VTF_USERDATA) {
+          line += n;
+          vtf_set_timestep_userdata(d->timestep, line);
+        }
+        break;
       }
-	
-	/* TIMESTEP RECORD */
+        
+        /* TIMESTEP RECORD */
       case 'c': 
       case 't': {
-	/* Remove the "timestep" or "coordinates" keyword */
-	sscanf(line, "%255s %n", s, &n);
-	line += n;
+        /* Remove the "timestep" or "coordinates" keyword */
+        sscanf(line, "%255s %n", s, &n);
+        line += n;
       }
       case 'i': 
       case 'o': { 
-	if (vtf_parse_timestep(line, d) != MOLFILE_SUCCESS)
-	  return MOLFILE_ERROR;
-	line = NULL; /* indicate end of this timestep */
-	d->timestep++;
-	break;
+        if (vtf_parse_timestep(line, d) != MOLFILE_SUCCESS)
+          return MOLFILE_ERROR;
+        line = NULL; /* indicate end of this timestep */
+        d->timestep++;
+        break;
       }
-	
+        
       default: { 
-	if (d->timestep_mode == TIMESTEP_INDEXED)
-	  vtf_error("unknown line in indexed timestep block", line);
-	else
-	  vtf_error("unknown line in ordered timestep block", line);
-	return MOLFILE_ERROR;
+        if (d->timestep_mode == TIMESTEP_INDEXED)
+          vtf_error("unknown line in indexed timestep block", line);
+        else
+          vtf_error("unknown line in ordered timestep block", line);
+        return MOLFILE_ERROR;
       }
       }
 
@@ -1035,8 +1035,8 @@ static int vtf_read_next_timestep(void *data,
  * Copy the info collected in vtf_open_file_read
  ***************************************************/
 static int vtf_read_structure(void *data, 
-			      int *optflags, 
-			      molfile_atom_t *atoms) {
+                              int *optflags, 
+                              molfile_atom_t *atoms) {
   vtf_data *d;
   d = (vtf_data*)data;
 
@@ -1057,13 +1057,13 @@ static int vtf_read_structure(void *data,
 }
 
 static int vtf_read_bonds(void *data, 
-			  int *nbonds, 
-			  int **from, 
-			  int **to,
-			  float **bondorder, 
-			  int **bondtype, 
-			  int *nbondtypes, 
-			  char ***bondtypename) {
+                          int *nbonds, 
+                          int **from, 
+                          int **to,
+                          float **bondorder, 
+                          int **bondtype, 
+                          int *nbondtypes, 
+                          char ***bondtypename) {
   vtf_data *d;
   if (!data) {
     vtf_error("Internal error: data==NULL in vtf_read_bonds", 0);
@@ -1163,9 +1163,9 @@ VMDPLUGIN_API int VMDPLUGIN_fini() {
 /* VTFTOOLS USERDATA PART */
 /***************************************************/
 static int vtf_parse_userdata(ClientData clientData, 
-			      Tcl_Interp *interp, 
-			      int argc, 
-			      const char *argv[]) {
+                              Tcl_Interp *interp, 
+                              int argc, 
+                              const char *argv[]) {
   /* Usage: vtf_parse_userdata path type */
   int natoms;
   const char *file, *type;
@@ -1197,7 +1197,7 @@ static int vtf_parse_userdata(ClientData clientData,
   } while (rc == MOLFILE_SUCCESS);
 
   sprintf(result, "%s: Read %d atoms and %d timesteps.", 
-	  argv[0], d->natoms, d->timestep);
+          argv[0], d->natoms, d->timestep);
   Tcl_SetResult(interp, result, TCL_VOLATILE);
   vtf_close_file_read(d);
   return TCL_OK;
@@ -1219,7 +1219,7 @@ int Vtfplugin_Init(Tcl_Interp *interp) {
 
   /* Create the Tcl command. */
   Tcl_CreateCommand(interp, 
-		    "vtf_parse_userdata", vtf_parse_userdata, 
-		    NULL, NULL);
+                    "vtf_parse_userdata", vtf_parse_userdata, 
+                    NULL, NULL);
   return TCL_OK;
 }
