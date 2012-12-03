@@ -252,6 +252,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   int rest_is_userdata;
   unsigned int from, to, aid;
   char *userdata;
+  int aid_list_size = 0;
+  int * aid_list = NULL;
 
   atom = default_atom;
   userdata = default_userdata;
@@ -264,187 +266,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   }
   s += n;
   rest_is_userdata = 0;
-
-#ifdef DEBUG
-  printf("\tatom record\n");
-#endif
-  
-  /* handle the keywords */
-  while (sscanf(s, "%255s %n", keyword, &n) == 1) {
-    s += n;
-    switch (tolower(keyword[0])) {
-    case 'n': {
-      /* name */
-      if (sscanf(s, "%16s %n", atom.name, &n) < 1) {
-        vtf_error("could not get name in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 't': {
-      /* type */
-      if (sscanf(s, "%16s %n", atom.type, &n) < 1) {
-        vtf_error("could not get type in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 'r': {
-      /* resname, resid, radius */
-      if (strlen(keyword) == 1 || 
-          strncmp(keyword, "rad", 3) == 0) { 
-        /* radius */
-        if (sscanf(s, "%f %n", &atom.radius, &n) < 1) {
-          vtf_error("could not get radius in atom record", line);
-          return MOLFILE_ERROR;
-        }
-        d->optflags |= MOLFILE_RADIUS;
-      } else if (strcmp(keyword, "resid") == 0) {
-        /* resid */
-        if (sscanf(s, "%d %n", &atom.resid, &n) < 1) {
-          vtf_error("could not get resid in atom record", line);
-          return MOLFILE_ERROR;
-        }
-      } else if (strcmp(keyword, "res") == 0 || 
-                 strcmp(keyword, "resname") == 0) {
-        /* resname */
-        if (sscanf(s, "%8s %n", atom.resname, &n) < 1) {
-          vtf_error("could not get resname in atom record", line);
-          return MOLFILE_ERROR;
-        }
-      } else {
-        strcpy(msg, "unrecognized keyword in atom record: ");
-        strncat(msg, keyword, 200);
-        vtf_error(msg, line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 's': {
-      /* segid */
-      if (sscanf(s, "%8s %n", atom.segid, &n) < 1) {
-        vtf_error("could not get segid in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 'i': {
-      /* insertion */
-      if (sscanf(s, "%2s %n", atom.insertion, &n) < 1) {
-        vtf_error("could not get insertion in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      d->optflags |= MOLFILE_INSERTION;
-      s += n;
-      break;
-    }
-    case 'c': {
-      /* chain, charge */
-      if (strlen(keyword) == 1 || 
-          strcmp(keyword, "chain") == 0) {
-        if (sscanf(s, "%2s %n", atom.chain, &n) < 1) {
-          vtf_error("could not get chain in atom record", line);
-          return MOLFILE_ERROR;
-        }
-      }
-    } /* if "chain" is not recognized, continue with next case */
-    case 'q': {
-      /* q and charge */
-      if (strlen(keyword) == 1 ||
-          strcmp(keyword, "charge") == 0) {
-        if (sscanf(s, "%f %n", &atom.charge, &n) < 1) {
-          vtf_error("could not get charge in atom record", line);
-          return MOLFILE_ERROR;
-        }
-        d->optflags |= MOLFILE_CHARGE;
-      } else {
-        strcpy(msg, "unrecognized keyword in atom record: ");
-        strncat(msg, keyword, 200);
-        vtf_error(msg, line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 'a': {
-      /* altloc, atomicnumber */
-      if (strlen(keyword)== 1 || 
-          strcmp(keyword, "atomicnumber") == 0) {
-        if (sscanf(s, "%d %n", &atom.atomicnumber, &n) < 1) {
-          vtf_error("could not get atomicnumber in atom record", line);
-          return MOLFILE_ERROR;
-        }
-        d->optflags |= MOLFILE_ATOMICNUMBER;
-      } else if (strcmp(keyword, "altloc")) {
-        if (sscanf(s, "%2s %n", atom.altloc, &n) < 1) {
-          vtf_error("could not get altloc in atom record", line);
-          return MOLFILE_ERROR;
-        }
-        d->optflags |= MOLFILE_ALTLOC;
-      } else { 
-        strcpy(msg, "unrecognized keyword in atom record: ");
-        strncat(msg, keyword, 200);
-        vtf_error(msg, line);
-        return MOLFILE_ERROR;
-      }
-      s += n;
-      break;
-    }
-    case 'o': {
-      /* occupancy */
-      if (sscanf(s, "%f %n", &atom.occupancy, &n) < 1) {
-        vtf_error("could not get occupancy in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      d->optflags |= MOLFILE_OCCUPANCY;
-      s += n;
-      break;
-    }
-    case 'b': {
-      /* bfactor */
-      if (sscanf(s, "%f %n", &atom.bfactor, &n) < 1) {
-        vtf_error("could not get bfactor in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      d->optflags |= MOLFILE_BFACTOR;
-      s += n;
-      break;
-    }
-    case 'm': {
-      /* mass */
-      if (sscanf(s, "%f %n", &atom.mass, &n) < 1) {
-        vtf_error("could not get mass in atom record", line);
-        return MOLFILE_ERROR;
-      }
-      d->optflags |= MOLFILE_MASS;
-      s += n;
-      break;
-    }
-    case 'u': {
-      /* user data: the rest of the line is user data */
-      rest_is_userdata = 1;
-      break;
-    }
-    default: { 
-      /* unrecognized */
-      strcpy(msg, "unrecognized keyword in atom record: ");
-      strncat(msg, keyword, 200);
-      vtf_error(msg, line);
-      return MOLFILE_ERROR;
-    }
-    }
-    if (rest_is_userdata) break;
-  }
-
-#ifdef DEBUG
-  printf("\tparsed keywords\n");
-#endif
-
-  if (rest_is_userdata) userdata = s;
 
   /* HANDLE THE AID SPECIFIER */
 
@@ -467,6 +288,13 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           vtf_error("bad range specifier (from > to):", s); 
           return MOLFILE_ERROR;
         }
+	/* add the range to the aid list */
+	for (aid = from; aid <= to; aid++) {
+	  aid_list_size++;
+	  aid_list = realloc(aid_list, aid_list_size * sizeof(int));
+	  aid_list[aid_list_size - 1] = aid;
+	  printf("%d\n", aid_list[aid_list_size - 1]);
+	}
         if (d->read_mode == VTF_MOLFILE) {
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
           /* TODO: error handling */
@@ -489,7 +317,14 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         }
       } else if (sscanf(s, "%u%n", &to, &n) == 1) {
         /* single aid given */
-        if (d->read_mode == VTF_MOLFILE) {
+        
+	/* add the aid to the aid_list */
+	aid_list_size++;
+	aid_list = realloc(aid_list, aid_list_size * sizeof(int));
+	aid_list[aid_list_size - 1] = atoi(s);
+	printf("%d\n", aid_list[aid_list_size - 1]);
+	
+	if (d->read_mode == VTF_MOLFILE) {
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
           /* TODO: error handling */
           /* fill up with default atoms */
@@ -526,6 +361,217 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       s++;
     };
   }
+
+#ifdef DEBUG
+  printf("\tatom record\n");
+#endif
+
+#define AIDLOOP(assignment) int i; for (i = 0; i < aid_list_size; i++) { int aid; aid = aid_list[i]; assignment; }
+  
+  /* handle the keywords */
+  while (sscanf(s, "%255s %n", keyword, &n) == 1) {
+    s += n;
+    switch (tolower(keyword[0])) {
+    case 'n': {
+      /* name */
+      if (sscanf(s, "%16s %n", atom.name, &n)) {
+	AIDLOOP(strcpy(d->atoms[aid].name, atom.name));
+      } else {
+        vtf_error("could not get name in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 't': {
+      /* type */
+      if (sscanf(s, "%16s %n", atom.type, &n)) {
+	AIDLOOP(strcpy(d->atoms[aid].type, atom.type));
+      } else {
+        vtf_error("could not get type in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 'r': {
+      /* resname, resid, radius */
+      if (strlen(keyword) == 1 || 
+          strncmp(keyword, "rad", 3) == 0) { 
+        /* radius */
+        if (sscanf(s, "%f %n", &atom.radius, &n)) {
+	  AIDLOOP(d->atoms[aid].radius = atom.radius);
+	} else {
+          vtf_error("could not get radius in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_RADIUS;
+      } else if (strcmp(keyword, "resid") == 0) {
+        /* resid */
+        if (sscanf(s, "%d %n", &atom.resid, &n)) {
+	  AIDLOOP(d->atoms[aid].resid = atom.resid);
+	} else {
+          vtf_error("could not get resid in atom record", line);
+          return MOLFILE_ERROR;
+        }
+      } else if (strcmp(keyword, "res") == 0 || 
+                 strcmp(keyword, "resname") == 0) {
+        /* resname */
+        if (sscanf(s, "%8s %n", atom.resname, &n)) {
+	  AIDLOOP(strcpy(d->atoms[aid].resname, atom.resname));
+	} else {
+          vtf_error("could not get resname in atom record", line);
+          return MOLFILE_ERROR;
+        }
+      } else {
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 's': {
+      /* segid */
+      if (sscanf(s, "%8s %n", atom.segid, &n)) {
+	AIDLOOP(strcpy(d->atoms[aid].segid, atom.segid));
+      } else {
+        vtf_error("could not get segid in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 'i': {
+      /* insertion */
+      if (sscanf(s, "%2s %n", atom.insertion, &n)) {
+	AIDLOOP(strcpy(d->atoms[aid].insertion, atom.insertion));
+      } else {
+        vtf_error("could not get insertion in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      d->optflags |= MOLFILE_INSERTION;
+      s += n;
+      break;
+    }
+    case 'c': {
+      /* chain, charge */
+      if (strlen(keyword) == 1 || 
+          strcmp(keyword, "chain") == 0) {
+        if (sscanf(s, "%2s %n", atom.chain, &n)) {
+	  AIDLOOP(strcpy(d->atoms[aid].chain, atom.chain));
+	} else {
+          vtf_error("could not get chain in atom record", line);
+          return MOLFILE_ERROR;
+        }
+      }
+    } /* if "chain" is not recognized, continue with next case */
+    case 'q': {
+      /* q and charge */
+      if (strlen(keyword) == 1 ||
+          strcmp(keyword, "charge") == 0) {
+        if (sscanf(s, "%f %n", &atom.charge, &n)) {
+	  AIDLOOP(d->atoms[aid].charge = atom.charge);
+	} else {
+          vtf_error("could not get charge in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_CHARGE;
+      } else {
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 'a': {
+      /* altloc, atomicnumber */
+      if (strlen(keyword)== 1 || 
+          strcmp(keyword, "atomicnumber") == 0) {
+        if (sscanf(s, "%d %n", &atom.atomicnumber, &n)) {
+	  AIDLOOP(d->atoms[aid].atomicnumber = atom.atomicnumber);
+	} else {
+          vtf_error("could not get atomicnumber in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_ATOMICNUMBER;
+      } else if (strcmp(keyword, "altloc")) {
+        if (sscanf(s, "%2s %n", atom.altloc, &n)) {
+	  AIDLOOP(strcpy(d->atoms[aid].altloc, atom.altloc));
+	} else {
+          vtf_error("could not get altloc in atom record", line);
+          return MOLFILE_ERROR;
+        }
+        d->optflags |= MOLFILE_ALTLOC;
+      } else { 
+        strcpy(msg, "unrecognized keyword in atom record: ");
+        strncat(msg, keyword, 200);
+        vtf_error(msg, line);
+        return MOLFILE_ERROR;
+      }
+      s += n;
+      break;
+    }
+    case 'o': {
+      /* occupancy */
+      if (sscanf(s, "%f %n", &atom.occupancy, &n)) {
+	AIDLOOP(d->atoms[aid].occupancy = atom.occupancy);
+      } else {
+        vtf_error("could not get occupancy in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      d->optflags |= MOLFILE_OCCUPANCY;
+      s += n;
+      break;
+    }
+    case 'b': {
+      /* bfactor */
+      if (sscanf(s, "%f %n", &atom.bfactor, &n)) {
+	AIDLOOP(d->atoms[aid].bfactor = atom.bfactor);
+      } else {
+        vtf_error("could not get bfactor in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      d->optflags |= MOLFILE_BFACTOR;
+      s += n;
+      break;
+    }
+    case 'm': {
+      /* mass */
+      if (sscanf(s, "%f %n", &atom.mass, &n)) {
+	AIDLOOP(d->atoms[aid].mass = atom.mass);
+      } else {
+        vtf_error("could not get mass in atom record", line);
+        return MOLFILE_ERROR;
+      }
+      d->optflags |= MOLFILE_MASS;
+      s += n;
+      break;
+    }
+    case 'u': {
+      /* user data: the rest of the line is user data */
+      rest_is_userdata = 1;
+      break;
+    }
+    default: { 
+      /* unrecognized */
+      strcpy(msg, "unrecognized keyword in atom record: ");
+      strncat(msg, keyword, 200);
+      vtf_error(msg, line);
+      return MOLFILE_ERROR;
+    }
+    }
+    if (rest_is_userdata) break;
+  }
+
+#ifdef DEBUG
+  printf("\tparsed keywords\n");
+#endif
+
+  if (rest_is_userdata) userdata = s;
 
   return MOLFILE_SUCCESS;
 }
