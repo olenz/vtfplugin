@@ -293,7 +293,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 	  aid_list_size++;
 	  aid_list = realloc(aid_list, aid_list_size * sizeof(int));
 	  aid_list[aid_list_size - 1] = aid;
-	  printf("%d\n", aid_list[aid_list_size - 1]);
 	}
         if (d->read_mode == VTF_MOLFILE) {
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
@@ -322,7 +321,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 	aid_list_size++;
 	aid_list = realloc(aid_list, aid_list_size * sizeof(int));
 	aid_list[aid_list_size - 1] = atoi(s);
-	printf("%d\n", aid_list[aid_list_size - 1]);
 	
 	if (d->read_mode == VTF_MOLFILE) {
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
