@@ -33,7 +33,7 @@ into Tcl data structures.
 #endif
 
 #define VERSION_MAJOR 2
-#define VERSION_MINOR 1
+#define VERSION_MINOR 2
 
 /* TODO:
 - volumetric/graphics format
@@ -244,11 +244,11 @@ static char *vtf_getline(VTFFILE file) {
    MOLFILE_ERROR if an error occured. */
 static int vtf_parse_atom(char *line, vtf_data *d) {
   static molfile_atom_t atom;
-  static char aid_specifier[255];
   static char keyword[255];
   static char msg[255];
   char *s;
   int n;
+  int i; 
   int rest_is_userdata;
   unsigned int from, to, aid;
   char *userdata;
@@ -259,19 +259,18 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   userdata = default_userdata;
   s = line;
 
-  /* save the aid specifier */
-  if (sscanf(s, "%255s %n", aid_specifier, &n) < 1) {
-    vtf_error("atom specifier is missing", line);
-    return MOLFILE_ERROR;
-  }
-  s += n;
-  rest_is_userdata = 0;
+#ifdef DEBUG
+  printf("\tatom record\n");
+#endif
+
+  printf("line: %s\n", s);
 
   /* HANDLE THE AID SPECIFIER */
 
   /* if the specifier is "default", set the default_atom */
-  if (aid_specifier[0] == 'd') {
+  if (s[0] == 'd') {
     default_atom = atom;
+    /* TODO: Handle correctly! */
     if (userdata != NULL)
       default_userdata = strdup(userdata);
 #ifdef DEBUG
@@ -279,7 +278,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 #endif
   } else {
     /* otherwise parse the aid specifier */
-    s = aid_specifier;
     while (1) {
       from = d->natoms;
       if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
@@ -360,19 +358,23 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     };
   }
 
-#ifdef DEBUG
-  printf("\tatom record\n");
-#endif
+  for (i = 0; i < aid_list_size; i++) {
+    printf("%d\n", aid_list[i]);
+  }
+
+  printf("Rest: %s\n", s);
 
 #define AIDLOOP(assignment) int i; for (i = 0; i < aid_list_size; i++) { int aid; aid = aid_list[i]; assignment; }
   
   /* handle the keywords */
+  rest_is_userdata = 0;
   while (sscanf(s, "%255s %n", keyword, &n) == 1) {
     s += n;
+    printf("keyword: %s\n", keyword);
     switch (tolower(keyword[0])) {
     case 'n': {
       /* name */
-      if (sscanf(s, "%16s %n", atom.name, &n)) {
+      if (sscanf(s, "%16s %n", atom.name, &n) == 1) {
 	AIDLOOP(strcpy(d->atoms[aid].name, atom.name));
       } else {
         vtf_error("could not get name in atom record", line);
@@ -383,7 +385,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 't': {
       /* type */
-      if (sscanf(s, "%16s %n", atom.type, &n)) {
+      if (sscanf(s, "%16s %n", atom.type, &n) == 1) {
 	AIDLOOP(strcpy(d->atoms[aid].type, atom.type));
       } else {
         vtf_error("could not get type in atom record", line);
@@ -397,7 +399,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       if (strlen(keyword) == 1 || 
           strncmp(keyword, "rad", 3) == 0) { 
         /* radius */
-        if (sscanf(s, "%f %n", &atom.radius, &n)) {
+        if (sscanf(s, "%f %n", &atom.radius, &n) == 1) {
 	  AIDLOOP(d->atoms[aid].radius = atom.radius);
 	} else {
           vtf_error("could not get radius in atom record", line);
@@ -406,7 +408,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         d->optflags |= MOLFILE_RADIUS;
       } else if (strcmp(keyword, "resid") == 0) {
         /* resid */
-        if (sscanf(s, "%d %n", &atom.resid, &n)) {
+        if (sscanf(s, "%d %n", &atom.resid, &n) == 1) {
 	  AIDLOOP(d->atoms[aid].resid = atom.resid);
 	} else {
           vtf_error("could not get resid in atom record", line);
@@ -415,7 +417,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       } else if (strcmp(keyword, "res") == 0 || 
                  strcmp(keyword, "resname") == 0) {
         /* resname */
-        if (sscanf(s, "%8s %n", atom.resname, &n)) {
+        if (sscanf(s, "%8s %n", atom.resname, &n) == 1) {
 	  AIDLOOP(strcpy(d->atoms[aid].resname, atom.resname));
 	} else {
           vtf_error("could not get resname in atom record", line);
@@ -432,7 +434,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 's': {
       /* segid */
-      if (sscanf(s, "%8s %n", atom.segid, &n)) {
+      if (sscanf(s, "%8s %n", atom.segid, &n) == 1) {
 	AIDLOOP(strcpy(d->atoms[aid].segid, atom.segid));
       } else {
         vtf_error("could not get segid in atom record", line);
@@ -443,7 +445,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'i': {
       /* insertion */
-      if (sscanf(s, "%2s %n", atom.insertion, &n)) {
+      if (sscanf(s, "%2s %n", atom.insertion, &n) == 1) {
 	AIDLOOP(strcpy(d->atoms[aid].insertion, atom.insertion));
       } else {
         vtf_error("could not get insertion in atom record", line);
@@ -457,7 +459,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* chain, charge */
       if (strlen(keyword) == 1 || 
           strcmp(keyword, "chain") == 0) {
-        if (sscanf(s, "%2s %n", atom.chain, &n)) {
+        if (sscanf(s, "%2s %n", atom.chain, &n) == 1) {
 	  AIDLOOP(strcpy(d->atoms[aid].chain, atom.chain));
 	} else {
           vtf_error("could not get chain in atom record", line);
@@ -469,7 +471,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* q and charge */
       if (strlen(keyword) == 1 ||
           strcmp(keyword, "charge") == 0) {
-        if (sscanf(s, "%f %n", &atom.charge, &n)) {
+        if (sscanf(s, "%f %n", &atom.charge, &n) == 1) {
 	  AIDLOOP(d->atoms[aid].charge = atom.charge);
 	} else {
           vtf_error("could not get charge in atom record", line);
@@ -489,7 +491,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* altloc, atomicnumber */
       if (strlen(keyword)== 1 || 
           strcmp(keyword, "atomicnumber") == 0) {
-        if (sscanf(s, "%d %n", &atom.atomicnumber, &n)) {
+        if (sscanf(s, "%d %n", &atom.atomicnumber, &n) == 1) {
 	  AIDLOOP(d->atoms[aid].atomicnumber = atom.atomicnumber);
 	} else {
           vtf_error("could not get atomicnumber in atom record", line);
@@ -497,7 +499,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         }
         d->optflags |= MOLFILE_ATOMICNUMBER;
       } else if (strcmp(keyword, "altloc")) {
-        if (sscanf(s, "%2s %n", atom.altloc, &n)) {
+        if (sscanf(s, "%2s %n", atom.altloc, &n) == 1) {
 	  AIDLOOP(strcpy(d->atoms[aid].altloc, atom.altloc));
 	} else {
           vtf_error("could not get altloc in atom record", line);
@@ -515,7 +517,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'o': {
       /* occupancy */
-      if (sscanf(s, "%f %n", &atom.occupancy, &n)) {
+      if (sscanf(s, "%f %n", &atom.occupancy, &n) == 1) {
 	AIDLOOP(d->atoms[aid].occupancy = atom.occupancy);
       } else {
         vtf_error("could not get occupancy in atom record", line);
@@ -527,7 +529,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'b': {
       /* bfactor */
-      if (sscanf(s, "%f %n", &atom.bfactor, &n)) {
+      if (sscanf(s, "%f %n", &atom.bfactor, &n) == 1) {
 	AIDLOOP(d->atoms[aid].bfactor = atom.bfactor);
       } else {
         vtf_error("could not get bfactor in atom record", line);
@@ -539,7 +541,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'm': {
       /* mass */
-      if (sscanf(s, "%f %n", &atom.mass, &n)) {
+      if (sscanf(s, "%f %n", &atom.mass, &n) == 1) {
 	AIDLOOP(d->atoms[aid].mass = atom.mass);
       } else {
         vtf_error("could not get mass in atom record", line);

@@ -9,7 +9,7 @@
 #   Olaf Lenz <olenz _at_ icp _dot_ uni-stuttgart _dot_ de>
 #
 package provide vtftools 1.0
-package require vtfplugin 2.1
+package require vtfplugin 2.2
 
 namespace eval ::VTFTools:: {
     namespace export *
