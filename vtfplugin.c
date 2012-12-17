@@ -348,7 +348,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       s += n;
 
       /* if there is no more to parse, break */
-      if (strlen(s) == 0) break;
+      sscanf(s," %n",&to,&n);
+      if (to == 1) break;
 
       /* otherwise the next char should be a ',' */
       if (s[0] != ',') {
