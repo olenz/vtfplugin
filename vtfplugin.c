@@ -276,6 +276,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 #ifdef DEBUG
     printf("\tdefine default atom\n");
 #endif
+    sscanf(s, "%255s %n", keyword, &n);
+    s += n;
   } else {
     /* otherwise parse the aid specifier */
     while (1) {
