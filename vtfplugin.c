@@ -305,6 +305,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 	  aid_list[aid_list_size - 1] = aid;
 	}
         if (d->read_mode == VTF_MOLFILE) {
+	  if (d->natoms > to) to = d->natoms; /* if to < natoms, the realloc will cut off all atoms with AID > to, this leads to garbage content in those atoms */
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
           /* TODO: error handling */
           /* fill up with default atoms */
@@ -313,8 +314,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           /* create new atoms */
           if (to+1 > d->natoms) d->natoms = to+1;
           /* TODO: error handling */
-          for (aid = from; aid <= to; aid++) /* TODO: This needs testing if it has the same issues as below */
-            d->atoms[aid] = atom;
+          /* for (aid = from; aid <= to; aid++) Here the existing atoms get overwritten with default data. */
+          /*  d->atoms[aid] = atom; */
         } else {
           /* fill up with default userdata */
           for (aid = d->natoms; aid < to; aid++)
