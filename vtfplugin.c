@@ -248,12 +248,12 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   static char msg[255];
   char *s;
   int n;
-  int i; 
   int rest_is_userdata;
   unsigned int from, to, aid;
   char *userdata;
   int aid_list_size = 0;
   int * aid_list = NULL;
+  int modify_default_atom;
 
   atom = default_atom;
   userdata = default_userdata;
@@ -270,9 +270,19 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   /* if the specifier is "default", set the default_atom */
   if (s[0] == 'd') {
     default_atom = atom;
+    /* Add the default atom at the end of all atoms and set the flag */
+    modify_default_atom = 1;
+    d->atoms = realloc(d->atoms, (d->natoms+1)*sizeof(molfile_atom_t));
+    d->atoms[d->natoms] = atom;
+    /* Add one element to the aid_list, so we can loop over it */
+    aid_list_size++;
+    aid_list = realloc(aid_list, aid_list_size * sizeof(int));
+    aid_list[aid_list_size - 1] = 0;
     /* TODO: Handle correctly! */
-    if (userdata != NULL)
+    if (userdata != NULL) {
+      printf("Setting userdata to: %s", userdata);
       default_userdata = strdup(userdata);
+    }
 #ifdef DEBUG
     printf("\tdefine default atom\n");
 #endif
@@ -303,7 +313,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           /* create new atoms */
           if (to+1 > d->natoms) d->natoms = to+1;
           /* TODO: error handling */
-          for (aid = from; aid <= to; aid++)
+          for (aid = from; aid <= to; aid++) /* TODO: This needs testing if it has the same issues as below */
             d->atoms[aid] = atom;
         } else {
           /* fill up with default userdata */
@@ -326,11 +336,12 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
           /* TODO: error handling */
           /* fill up with default atoms */
-          for (aid = d->natoms; aid < to; aid++)
+          for (aid = d->natoms; aid <= to; aid++) { /* It has to be aid <= to. Because if aid < to, aid = 0 isn't catched for example */
             d->atoms[aid] = default_atom;
+	  }
           /* create the new atom */
           if (to+1 > d->natoms) d->natoms = to+1;
-          d->atoms[to] = atom;
+          /* d->atoms[to] = atom; This line is unnecessary as it just overwrites everything with defaults*/
         } else {
           /* fill up with default userdata */
           for (aid = d->natoms; aid < to; aid++)
@@ -348,8 +359,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       s += n;
 
       /* if there is no more to parse, break */
-      sscanf(s," %n",&to,&n);
-      if (to == 1) break;
+      sscanf(s," %n",&n);
+      if (n == 1) break;
 
       /* otherwise the next char should be a ',' */
       if (s[0] != ',') {
@@ -359,10 +370,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* skip the ',' */
       s++;
     };
-  }
-
-  for (i = 0; i < aid_list_size; i++) {
-    printf("%d\n", aid_list[i]);
   }
 
   printf("Rest: %s\n", s);
@@ -568,6 +575,13 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     }
     if (rest_is_userdata) break;
+  }
+
+  if (modify_default_atom == 1) {
+    modify_default_atom = 0;
+    default_atom = d->atoms[d->natoms];
+    atom = d->atoms[d->natoms];
+    d->atoms = realloc(d->atoms, (d->natoms)*sizeof(molfile_atom_t));
   }
 
 #ifdef DEBUG
