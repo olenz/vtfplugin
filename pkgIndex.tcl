@@ -8,5 +8,5 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
-package ifneeded vtfplugin 2.1 [list load [file join $dir vtfplugin.so]]
+package ifneeded vtfplugin 2.2 [list load [file join $dir vtfplugin.so]]
 package ifneeded vtftools 1.0 [list source [file join $dir vtftools.tcl]]
