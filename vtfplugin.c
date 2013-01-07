@@ -253,9 +253,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   char *userdata;
   int aid_list_size = 0;
   int * aid_list = NULL;
-  int modify_default_atom;
+  int modify_default_atom = 0;
 
-  atom = default_atom;
   userdata = default_userdata;
   s = line;
 
@@ -269,11 +268,10 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 
   /* if the specifier is "default", set the default_atom */
   if (s[0] == 'd') {
-    default_atom = atom;
     /* Add the default atom at the end of all atoms and set the flag */
     modify_default_atom = 1;
     d->atoms = realloc(d->atoms, (d->natoms+1)*sizeof(molfile_atom_t));
-    d->atoms[d->natoms] = atom;
+    d->atoms[d->natoms] = default_atom;
     /* Add one element to the aid_list, so we can loop over it */
     aid_list_size++;
     aid_list = realloc(aid_list, aid_list_size * sizeof(int));
@@ -581,7 +579,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   if (modify_default_atom == 1) {
     modify_default_atom = 0;
     default_atom = d->atoms[d->natoms];
-    atom = d->atoms[d->natoms];
     d->atoms = realloc(d->atoms, (d->natoms)*sizeof(molfile_atom_t));
   }
 
