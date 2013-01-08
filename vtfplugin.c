@@ -136,6 +136,13 @@ static void vtf_error(const char *msg, const char *line) {
 }
 
 /***************************************************
+ * Free malloced memory, checking for NULL
+ ***************************************************/
+static void sfree(void* ptr) {
+  if (ptr != NULL) free(ptr);
+}
+
+/***************************************************
  * Read a line
  ***************************************************/
 
@@ -164,14 +171,14 @@ static char *vtf_getline(VTFFILE file) {
   bytes_left = buffer_size;
 
   if (feof(file)) {
-    free(buffer);
+    sfree(buffer);
     buffer = NULL;
     return NULL;
   }
   do {
     /* read a line */
     if (fgets(s, bytes_left, file) == NULL) {
-      free(buffer);
+      sfree(buffer);
       buffer = NULL;
       return NULL;
     }
@@ -226,7 +233,7 @@ static char *vtf_getline(VTFFILE file) {
   /* handle empty lines */
   if (l == 0) {
     if (feof(file)) {
-      free(buffer);
+      sfree(buffer);
       buffer = NULL;
       return NULL;
     }
@@ -293,6 +300,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         /* range given */
         if (from > to) { 
           vtf_error("bad range specifier (from > to):", s); 
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
         /* add the range to the aid list */
@@ -350,6 +358,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         }
       } else {
         vtf_error("bad atom specifier", s);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
 
@@ -363,6 +372,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* otherwise the next char should be a ',' */
       if (s[0] != ',') {
         vtf_error("bad atom specifier in line", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       /* skip the ',' */
@@ -415,6 +425,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(d->atoms[aid].radius = atom.radius);
         } else {
           vtf_error("could not get radius in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
         d->optflags |= MOLFILE_RADIUS;
@@ -424,6 +435,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(d->atoms[aid].resid = atom.resid);
         } else {
           vtf_error("could not get resid in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
       } else if (strcmp(keyword, "res") == 0 || 
@@ -433,12 +445,14 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(strcpy(d->atoms[aid].resname, atom.resname));
         } else {
           vtf_error("could not get resname in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
       } else {
         strcpy(msg, "unrecognized keyword in atom record: ");
         strncat(msg, keyword, 200);
         vtf_error(msg, line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       s += n;
@@ -450,6 +464,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         AIDLOOP(strcpy(d->atoms[aid].segid, atom.segid));
       } else {
         vtf_error("could not get segid in atom record", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       s += n;
@@ -461,6 +476,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         AIDLOOP(strcpy(d->atoms[aid].insertion, atom.insertion));
       } else {
         vtf_error("could not get insertion in atom record", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_INSERTION;
@@ -475,6 +491,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(strcpy(d->atoms[aid].chain, atom.chain));
         } else {
           vtf_error("could not get chain in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
       }
@@ -487,6 +504,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(d->atoms[aid].charge = atom.charge);
         } else {
           vtf_error("could not get charge in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
         d->optflags |= MOLFILE_CHARGE;
@@ -494,6 +512,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         strcpy(msg, "unrecognized keyword in atom record: ");
         strncat(msg, keyword, 200);
         vtf_error(msg, line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       s += n;
@@ -507,6 +526,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(d->atoms[aid].atomicnumber = atom.atomicnumber);
         } else {
           vtf_error("could not get atomicnumber in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
         d->optflags |= MOLFILE_ATOMICNUMBER;
@@ -515,6 +535,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           AIDLOOP(strcpy(d->atoms[aid].altloc, atom.altloc));
         } else {
           vtf_error("could not get altloc in atom record", line);
+          sfree(aid_list);
           return MOLFILE_ERROR;
         }
         d->optflags |= MOLFILE_ALTLOC;
@@ -522,6 +543,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         strcpy(msg, "unrecognized keyword in atom record: ");
         strncat(msg, keyword, 200);
         vtf_error(msg, line);
+          sfree(aid_list);
         return MOLFILE_ERROR;
       }
       s += n;
@@ -533,6 +555,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         AIDLOOP(d->atoms[aid].occupancy = atom.occupancy);
       } else {
         vtf_error("could not get occupancy in atom record", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_OCCUPANCY;
@@ -545,6 +568,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         AIDLOOP(d->atoms[aid].bfactor = atom.bfactor);
       } else {
         vtf_error("could not get bfactor in atom record", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_BFACTOR;
@@ -557,6 +581,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         AIDLOOP(d->atoms[aid].mass = atom.mass);
       } else {
         vtf_error("could not get mass in atom record", line);
+        sfree(aid_list);
         return MOLFILE_ERROR;
       }
       d->optflags |= MOLFILE_MASS;
@@ -573,6 +598,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       strcpy(msg, "unrecognized keyword in atom record: ");
       strncat(msg, keyword, 200);
       vtf_error(msg, line);
+      sfree(aid_list);
       return MOLFILE_ERROR;
     }
     }
@@ -584,6 +610,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     default_atom = d->atoms[d->natoms];
     d->atoms = realloc(d->atoms, (d->natoms)*sizeof(molfile_atom_t));
   }
+
+  sfree(aid_list);
 
 #ifdef DEBUG
   printf("\tparsed keywords\n");
@@ -810,7 +838,7 @@ static void vtf_parse_structure(vtf_data *d) {
     d->return_code = MOLFILE_ERROR;
   }
 
-  if (default_userdata != NULL) free(default_userdata);
+  sfree(default_userdata);
 }
 
 /***************************************************
@@ -872,7 +900,7 @@ _vtf_open_file_read(const char *filepath,
     char msg[255];
     sprintf(msg, "vtfplugin: %s", filepath);
     perror(msg);
-    free(d);
+    sfree(d);
     return NULL;
   }
 
@@ -885,7 +913,15 @@ _vtf_open_file_read(const char *filepath,
     vtf_parse_structure(d);
     
     if (d->return_code != MOLFILE_SUCCESS) {
-      free(d);
+      /* close the file */
+      fclose(d->file);
+
+      /* free the data */
+      sfree(d->atoms);
+      sfree(d->coords);
+      sfree(d->from);
+      sfree(d->to);
+      sfree(d);
       return NULL;
     }
    
@@ -916,13 +952,10 @@ static void vtf_close_file_read(void *data) {
   fclose(d->file);
 
   /* free the data */
-  if (d->coords != NULL)
-    free(d->coords);
-  if (d->from != NULL)
-    free(d->from);
-  if (d->to != NULL)
-    free(d->to);
-  free(d);
+  sfree(d->coords);
+  sfree(d->from);
+  sfree(d->to);
+  sfree(d);
 }
 
 /* Read the next timestep from the file and store what has been read
@@ -1111,7 +1144,7 @@ static int vtf_read_structure(void *data,
     /* copy the data parsed in vtf_open_file_read() */
     memcpy(atoms, d->atoms, d->natoms*sizeof(molfile_atom_t));
     /* free the data parsed in vtf_open_file_read() */
-    free(d->atoms);
+    sfree(d->atoms);
     d->atoms = NULL;
   }
 
