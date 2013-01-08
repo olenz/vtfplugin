@@ -123,7 +123,7 @@ void vtf_set_coordinate_userdata(const unsigned int timestep,
  ***************************************************/
 static void vtf_error(const char *msg, const char *line) {
   char message[255];
-  sprintf(message, "vtfplugin:%d: error: %s: %-20s\n",    
+  sprintf(message, "vtfplugin:%d: error: %s: \"%s\"\n",    
           vtf_lineno, msg, line);
 
 /* #if vmdplugin_ABIVERSION > 13 */
@@ -246,6 +246,102 @@ static char *vtf_getline(VTFFILE file) {
 /***************************************************
  * Parse ATOM
  ***************************************************/
+/* Create new atoms so that after the call max_aid atoms are there */
+static void vtf_create_atoms_as_needed(int max_aid, vtf_data *d) {
+  /* create new atoms as needed */
+  if (d->natoms < max_aid+1) {
+    int aid;
+      /* fill up with default atoms */
+      d->atoms = realloc(d->atoms, (max_aid+1)*sizeof(molfile_atom_t));
+      for (aid = d->natoms; aid <= max_aid; aid++)
+        d->atoms[aid] = default_atom;
+      d->natoms = max_aid+1;
+    if (d->read_mode != VTF_MOLFILE) {
+      /* fill up with default userdata */
+      for (aid = d->natoms; aid <= max_aid; aid++)
+        vtf_set_atom_userdata(aid, default_userdata);
+    }
+  }
+}
+
+/* Parse the aid specifier.
+   Return an integer list of the aids that need to be modifed. The
+   list is terminated by -1. If the list is NULL, an error occured. If
+   the list is empty (i.e. it only contains -1), the default atom is
+   to be modified.
+ */
+static int *vtf_parse_aid_specifier(char *s, vtf_data *d) {
+  int n;
+  unsigned int aid, from, to, offset;
+  unsigned int size = 0;
+  int *aid_list = NULL;
+
+  if (s[0] == 'd') {
+    /* DEFAULT */
+    /* if the specifier is "default", just leave the list empty! */
+#ifdef DEBUG
+    printf("%s", "\tdefine default atom\n");
+#endif
+  } else {
+    /* otherwise parse the aid specifier */
+    while (1) {
+      from = d->natoms;
+
+      if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
+        /* RANGE */
+        if (from > to) { 
+          vtf_error("bad range specifier (from > to):", s); 
+          sfree(aid_list);
+          return NULL;
+        }
+        vtf_create_atoms_as_needed(to, d);
+        /* add the range to the aid list */
+        offset = size;
+        size += to-from+1;
+        aid_list = realloc(aid_list, size*sizeof(int));
+        for (aid = from; aid <= to; aid++) {
+          aid_list[offset] = aid;
+          offset++;
+        }
+
+      } else if (sscanf(s, "%u%n", &to, &n) == 1) {
+        /* SINGLE AID */
+        vtf_create_atoms_as_needed(to, d);
+        /* add the aid to the aid_list */
+        size += 1;
+        aid_list = realloc(aid_list, size*sizeof(int));
+        aid_list[size - 1] = to;
+
+      } else {
+        /* ERROR */
+        vtf_error("bad aid specifier", s);
+        sfree(aid_list);
+        return NULL;
+      }
+
+      /* advance s */
+      s += n;
+
+      /* if there is no more to parse, break */
+      if (s[0] == '\0') break;
+
+      /* otherwise the next char should be a ',' */
+      if (s[0] != ',') {
+        vtf_error("bad aid specifier", s);
+        sfree(aid_list);
+        return NULL;
+      }
+      /* skip the ',' */
+      s++;
+    };
+  }
+
+  /* Terminate the list with -1 */
+  aid_list = realloc(aid_list, (size+1)*sizeof(int));
+  aid_list[size] = -1;
+  return aid_list;
+}
+
 /* Parse atom data from line. 
    Return MOLFILE_SUCCESS, if data was sucessfully parsed, 
    MOLFILE_ERROR if an error occured. */
@@ -253,16 +349,13 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   static molfile_atom_t atom;
   static char keyword[255];
   static char msg[255];
-  char *s;
+  static char aid_specifier[255];
   int n;
+  char *s;
   int rest_is_userdata;
-  unsigned int from, to, aid;
-  char *userdata;
-  int aid_list_size = 0;
-  int * aid_list = NULL;
-  int modify_default_atom = 0;
+  int *aid_list = NULL;
 
-  userdata = default_userdata;
+  atom = default_atom;
   s = line;
 
 #ifdef DEBUG
@@ -272,119 +365,31 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 
   /* HANDLE THE AID SPECIFIER */
 
-  /* if the specifier is "default", set the default_atom */
-  if (s[0] == 'd') {
-    /* Add the default atom at the end of all atoms and set the flag */
-    modify_default_atom = 1;
-    d->atoms = realloc(d->atoms, (d->natoms+1)*sizeof(molfile_atom_t));
-    d->atoms[d->natoms] = default_atom;
-    /* Add one element to the aid_list, so we can loop over it */
-    aid_list_size++;
-    aid_list = realloc(aid_list, aid_list_size * sizeof(int));
-    aid_list[aid_list_size - 1] = 0;
-    /* TODO: Handle correctly! */
-    if (userdata != NULL) {
-      printf("Setting userdata to: %s", userdata);
-      default_userdata = strdup(userdata);
-    }
-#ifdef DEBUG
-    printf("\tdefine default atom\n");
-#endif
-    sscanf(s, "%255s %n", keyword, &n);
-    s += n;
-  } else {
-    /* otherwise parse the aid specifier */
-    while (1) {
-      from = d->natoms;
-      if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
-        /* range given */
-        if (from > to) { 
-          vtf_error("bad range specifier (from > to):", s); 
-          sfree(aid_list);
-          return MOLFILE_ERROR;
-        }
-        /* add the range to the aid list */
-        for (aid = from; aid <= to; aid++) {
-          aid_list_size++;
-          aid_list = realloc(aid_list, aid_list_size * sizeof(int));
-          aid_list[aid_list_size - 1] = aid;
-        }
-        if (d->read_mode == VTF_MOLFILE) {
-          if (d->natoms > to) to = d->natoms; /* if to < natoms, the realloc will cut off all atoms with AID > to, this leads to garbage content in those atoms */
-          d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
-          /* TODO: error handling */
-          /* fill up with default atoms */
-          for (aid = d->natoms; aid < to; aid++)
-            d->atoms[aid] = default_atom;
-          /* create new atoms */
-          if (to+1 > d->natoms) d->natoms = to+1;
-          /* TODO: error handling */
-          /* for (aid = from; aid <= to; aid++) Here the existing atoms get overwritten with default data. */
-          /*  d->atoms[aid] = atom; */
-        } else {
-          /* fill up with default userdata */
-          for (aid = d->natoms; aid < to; aid++)
-            vtf_set_atom_userdata(aid, default_userdata);
-          /* create new userdata */
-          if (to+1 > d->natoms) d->natoms = to+1;
-          for (aid = from; aid <= to; aid++)
-            vtf_set_atom_userdata(aid, userdata);
-        }
-      } else if (sscanf(s, "%u%n", &to, &n) == 1) {
-        /* single aid given */
-        
-        /* add the aid to the aid_list */
-        aid_list_size++;
-        aid_list = realloc(aid_list, aid_list_size * sizeof(int));
-        aid_list[aid_list_size - 1] = atoi(s);
-
-        if (d->read_mode == VTF_MOLFILE) {
-          d->atoms = realloc(d->atoms, (to+1)*sizeof(molfile_atom_t));
-          /* TODO: error handling */
-          /* fill up with default atoms */
-          for (aid = d->natoms; aid <= to; aid++) { /* It has to be aid <= to. Because if aid < to, aid = 0 isn't catched for example */
-            d->atoms[aid] = default_atom;
-          }
-          /* create the new atom */
-          if (to+1 > d->natoms) d->natoms = to+1;
-          /* d->atoms[to] = atom; This line is unnecessary as it just overwrites everything with defaults*/
-        } else {
-          /* fill up with default userdata */
-          for (aid = d->natoms; aid < to; aid++)
-            vtf_set_atom_userdata(aid, default_userdata);
-          if (to+1 > d->natoms) d->natoms = to+1;
-          /* create new userdata */
-          vtf_set_atom_userdata(to, userdata);
-        }
-      } else {
-        vtf_error("bad atom specifier", s);
-        sfree(aid_list);
-        return MOLFILE_ERROR;
-      }
-
-      /* advance s */
-      s += n;
-
-      /* if there is no more to parse, break */
-      sscanf(s," %n",&n);
-      if (n == 1) break;
-
-      /* otherwise the next char should be a ',' */
-      if (s[0] != ',') {
-        vtf_error("bad atom specifier in line", line);
-        sfree(aid_list);
-        return MOLFILE_ERROR;
-      }
-      /* skip the ',' */
-      s++;
-    };
+  /* save the aid specifier */
+  if (sscanf(s, "%255s %n", aid_specifier, &n) < 1) {
+    vtf_error("atom specifier is missing", line);
+    return MOLFILE_ERROR;
   }
+  s += n;
+
+  /* aid_list: -1 denotes end of list; if the list is empty, the default atom is modified */
+  aid_list = vtf_parse_aid_specifier(aid_specifier, d);
+  if (aid_list == NULL) return MOLFILE_ERROR;
 
 #ifdef DEBUG
   printf("Rest: %s\n", s);
 #endif
 
-#define AIDLOOP(assignment) int i; for (i = 0; i < aid_list_size; i++) { int aid; aid = aid_list[i]; assignment; }
+  /* A -1 in the aid_list denotes the end of the list */
+#define AIDLOOP(assignment)                                             \
+  {                                                                     \
+    int *aid_ptr;                                                       \
+    for (aid_ptr = aid_list; *aid_ptr != -1; aid_ptr++) {               \
+      int aid = *aid_ptr;                                               \
+      molfile_atom_t *cur_atom = &d->atoms[aid];                        \
+      assignment;                                                       \
+    }                                                                   \
+  }
   
   /* handle the keywords */
   rest_is_userdata = 0;
@@ -397,7 +402,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'n': {
       /* name */
       if (sscanf(s, "%16s %n", atom.name, &n) == 1) {
-        AIDLOOP(strcpy(d->atoms[aid].name, atom.name));
+        AIDLOOP(strcpy(cur_atom->name, atom.name));
       } else {
         vtf_error("could not get name in atom record", line);
         return MOLFILE_ERROR;
@@ -408,7 +413,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 't': {
       /* type */
       if (sscanf(s, "%16s %n", atom.type, &n) == 1) {
-        AIDLOOP(strcpy(d->atoms[aid].type, atom.type));
+        AIDLOOP(strcpy(cur_atom->type, atom.type));
       } else {
         vtf_error("could not get type in atom record", line);
         return MOLFILE_ERROR;
@@ -422,7 +427,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           strncmp(keyword, "rad", 3) == 0) { 
         /* radius */
         if (sscanf(s, "%f %n", &atom.radius, &n) == 1) {
-          AIDLOOP(d->atoms[aid].radius = atom.radius);
+          AIDLOOP(cur_atom->radius = atom.radius);
         } else {
           vtf_error("could not get radius in atom record", line);
           sfree(aid_list);
@@ -432,7 +437,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       } else if (strcmp(keyword, "resid") == 0) {
         /* resid */
         if (sscanf(s, "%d %n", &atom.resid, &n) == 1) {
-          AIDLOOP(d->atoms[aid].resid = atom.resid);
+          AIDLOOP(cur_atom->resid = atom.resid);
         } else {
           vtf_error("could not get resid in atom record", line);
           sfree(aid_list);
@@ -442,7 +447,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
                  strcmp(keyword, "resname") == 0) {
         /* resname */
         if (sscanf(s, "%8s %n", atom.resname, &n) == 1) {
-          AIDLOOP(strcpy(d->atoms[aid].resname, atom.resname));
+          AIDLOOP(strcpy(cur_atom->resname, atom.resname));
         } else {
           vtf_error("could not get resname in atom record", line);
           sfree(aid_list);
@@ -461,7 +466,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 's': {
       /* segid */
       if (sscanf(s, "%8s %n", atom.segid, &n) == 1) {
-        AIDLOOP(strcpy(d->atoms[aid].segid, atom.segid));
+        AIDLOOP(strcpy(cur_atom->segid, atom.segid));
       } else {
         vtf_error("could not get segid in atom record", line);
         sfree(aid_list);
@@ -473,7 +478,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'i': {
       /* insertion */
       if (sscanf(s, "%2s %n", atom.insertion, &n) == 1) {
-        AIDLOOP(strcpy(d->atoms[aid].insertion, atom.insertion));
+        AIDLOOP(strcpy(cur_atom->insertion, atom.insertion));
       } else {
         vtf_error("could not get insertion in atom record", line);
         sfree(aid_list);
@@ -488,7 +493,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       if (strlen(keyword) == 1 || 
           strcmp(keyword, "chain") == 0) {
         if (sscanf(s, "%2s %n", atom.chain, &n) == 1) {
-          AIDLOOP(strcpy(d->atoms[aid].chain, atom.chain));
+          AIDLOOP(strcpy(cur_atom->chain, atom.chain));
         } else {
           vtf_error("could not get chain in atom record", line);
           sfree(aid_list);
@@ -501,7 +506,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       if (strlen(keyword) == 1 ||
           strcmp(keyword, "charge") == 0) {
         if (sscanf(s, "%f %n", &atom.charge, &n) == 1) {
-          AIDLOOP(d->atoms[aid].charge = atom.charge);
+          AIDLOOP(cur_atom->charge = atom.charge);
         } else {
           vtf_error("could not get charge in atom record", line);
           sfree(aid_list);
@@ -523,7 +528,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       if (strlen(keyword)== 1 || 
           strcmp(keyword, "atomicnumber") == 0) {
         if (sscanf(s, "%d %n", &atom.atomicnumber, &n) == 1) {
-          AIDLOOP(d->atoms[aid].atomicnumber = atom.atomicnumber);
+          AIDLOOP(cur_atom->atomicnumber = atom.atomicnumber);
         } else {
           vtf_error("could not get atomicnumber in atom record", line);
           sfree(aid_list);
@@ -532,7 +537,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         d->optflags |= MOLFILE_ATOMICNUMBER;
       } else if (strcmp(keyword, "altloc")) {
         if (sscanf(s, "%2s %n", atom.altloc, &n) == 1) {
-          AIDLOOP(strcpy(d->atoms[aid].altloc, atom.altloc));
+          AIDLOOP(strcpy(cur_atom->altloc, atom.altloc));
         } else {
           vtf_error("could not get altloc in atom record", line);
           sfree(aid_list);
@@ -552,7 +557,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'o': {
       /* occupancy */
       if (sscanf(s, "%f %n", &atom.occupancy, &n) == 1) {
-        AIDLOOP(d->atoms[aid].occupancy = atom.occupancy);
+        AIDLOOP(cur_atom->occupancy = atom.occupancy);
       } else {
         vtf_error("could not get occupancy in atom record", line);
         sfree(aid_list);
@@ -565,7 +570,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'b': {
       /* bfactor */
       if (sscanf(s, "%f %n", &atom.bfactor, &n) == 1) {
-        AIDLOOP(d->atoms[aid].bfactor = atom.bfactor);
+        AIDLOOP(cur_atom->bfactor = atom.bfactor);
       } else {
         vtf_error("could not get bfactor in atom record", line);
         sfree(aid_list);
@@ -578,7 +583,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'm': {
       /* mass */
       if (sscanf(s, "%f %n", &atom.mass, &n) == 1) {
-        AIDLOOP(d->atoms[aid].mass = atom.mass);
+        AIDLOOP(cur_atom->mass = atom.mass);
       } else {
         vtf_error("could not get mass in atom record", line);
         sfree(aid_list);
@@ -589,8 +594,11 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       break;
     }
     case 'u': {
-      /* user data: the rest of the line is user data */
+      /* userdata: the rest of the line is user data */
       rest_is_userdata = 1;
+      if (d->read_mode != VTF_MOLFILE) {
+        AIDLOOP(vtf_set_atom_userdata(aid, s));
+      }
       break;
     }
     default: { 
@@ -605,10 +613,13 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     if (rest_is_userdata) break;
   }
 
-  if (modify_default_atom == 1) {
-    modify_default_atom = 0;
-    default_atom = d->atoms[d->natoms];
-    d->atoms = realloc(d->atoms, (d->natoms)*sizeof(molfile_atom_t));
+  /* if the aid_list is empty, modify the default atom */
+  if (*aid_list == -1) {
+      default_atom = atom;
+      if (d->read_mode != VTF_MOLFILE) {
+        sfree(default_userdata);
+        default_userdata = strdup(s);
+      }
   }
 
   sfree(aid_list);
@@ -616,8 +627,6 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 #ifdef DEBUG
   printf("\tparsed keywords\n");
 #endif
-
-  if (rest_is_userdata) userdata = s;
 
   return MOLFILE_SUCCESS;
 }
