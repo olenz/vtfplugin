@@ -1,4 +1,4 @@
-/* VTF plugin by Olaf Lenz <olaf@lenz.name> */
+/* VTF plugin by Olaf Lenz <olaf@lenz.name> and Henri Menke */
 /* $Id: vtfplugin.c,v 1.13 2009/05/18 05:01:56 johns Exp $ */
 
 /*
@@ -131,7 +131,7 @@ static void vtf_error(const char *msg, const char *line) {
 /*     cons_fputs(VMDCON_ERROR, message); */
 /*   else */
 /* #else */
-    printf(message);
+  printf("%s", message);
 /* #endif */
 }
 
@@ -260,9 +260,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
 
 #ifdef DEBUG
   printf("\tatom record\n");
-#endif
-
   printf("line: %s\n", s);
+#endif
 
   /* HANDLE THE AID SPECIFIER */
 
@@ -371,7 +370,9 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     };
   }
 
+#ifdef DEBUG
   printf("Rest: %s\n", s);
+#endif
 
 #define AIDLOOP(assignment) int i; for (i = 0; i < aid_list_size; i++) { int aid; aid = aid_list[i]; assignment; }
   
@@ -379,7 +380,9 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   rest_is_userdata = 0;
   while (sscanf(s, "%255s %n", keyword, &n) == 1) {
     s += n;
+#ifdef DEBUG
     printf("keyword: %s\n", keyword);
+#endif
     switch (tolower(keyword[0])) {
     case 'n': {
       /* name */
