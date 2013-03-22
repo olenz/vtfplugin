@@ -372,13 +372,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   }
   s += n;
 
-  /* aid_list: -1 denotes end of list; if the list is empty, the default atom is modified */
   aid_list = vtf_parse_aid_specifier(aid_specifier, d);
   if (aid_list == NULL) return MOLFILE_ERROR;
-
-#ifdef DEBUG
-  printf("Rest: %s\n", s);
-#endif
 
   /* A -1 in the aid_list denotes the end of the list */
 #define AIDLOOP(assignment)                                             \
@@ -396,7 +391,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   while (sscanf(s, "%255s %n", keyword, &n) == 1) {
     s += n;
 #ifdef DEBUG
-    printf("keyword: %s\n", keyword);
+    printf("keyword: \"%s\" rest: \"%s\"\n", keyword, s);
 #endif
     switch (tolower(keyword[0])) {
     case 'n': {
@@ -494,6 +489,8 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
           strcmp(keyword, "chain") == 0) {
         if (sscanf(s, "%2s %n", atom.chain, &n) == 1) {
           AIDLOOP(strcpy(cur_atom->chain, atom.chain));
+          s += n;
+          break;
         } else {
           vtf_error("could not get chain in atom record", line);
           sfree(aid_list);
