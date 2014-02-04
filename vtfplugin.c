@@ -698,15 +698,14 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
    sucessfully parsed, MOLFILE_ERROR if an error occured. */
 static int vtf_parse_pbc(char *line, vtf_data *d) {
   char *s;
-  int n;
+  int n = 0;
 
-  if (sscanf(line, "%f %f %f %n", 
-    &d->A, &d->B, &d->C, &n) < 3) {
+  if (sscanf(line, "%f %f %f %n", &d->A, &d->B, &d->C, &n) < 3) {
     s = line;
     vtf_error("Couldn't parse unit cell dimensions", s);
     return MOLFILE_ERROR;
   }
-  s = line+n;
+  s = line + n;
 
   n = sscanf(s, "%f %f %f", &d->alpha, &d->beta, &d->gamma);
   if (n > 0 && n < 3) {
@@ -769,7 +768,7 @@ static void vtf_parse_structure(vtf_data *d) {
       /* ATOM RECORD */
     case 'a': {
       /* Remove the "atom" keyword" */
-      sscanf(line, "%255s %n", s, &n);
+     sscanf(line, "%255s %n", s, &n);
       line += n;
     }
     case '0':
@@ -900,7 +899,7 @@ _vtf_open_file_read(const char *filepath,
   d->gamma = 90.0;
 
   /* Open the file */
-  d->file = fopen(filepath, "r");
+  d->file = fopen(filepath, "rb");
   if (d->file == NULL) {
     /* Could not open file */
     char msg[255];

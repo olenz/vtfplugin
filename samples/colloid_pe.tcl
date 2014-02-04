@@ -121,7 +121,7 @@ set cap 10
 set warmup_finished 0
 while { ! $warmup_finished } {
     # set ljforcecap
-    inter ljforcecap $cap
+    inter forcecap $cap
     # integrate a number of steps, e.g. 20
     integrate 20
     for { set pid 0 } { $pid < [setmd n_part] } { incr pid } {
@@ -142,9 +142,9 @@ while { ! $warmup_finished } {
 puts "Warmup finished."
 writevcf $vtf_file
 
-# turn off the ljforcecap, which is done by setting the 
+# turn off the forcecap, which is done by setting the 
 # force cap value to zero:
-inter ljforcecap 0
+inter forcecap 0
 # reset velocities
 for { set pid 0 } { $pid < [setmd n_part] } { incr pid } {
     part $pid v 0 0 0

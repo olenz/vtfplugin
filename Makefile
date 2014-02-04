@@ -36,10 +36,10 @@ ifdef DEBUG
 CFLAGS += -DDEBUG
 endif
 
-all: vtftest vtfplugin.so
+all: vtftest vtfplugin.so 
 
 vtftest: vtfplugin.o
-vtfplugin.so: vtfplugin.o
+vtfplugin.so: vtfplugin.o Makefile
 	$(SHLD) $(SHLDFLAGS) $< -o vtfplugin.so
 
 clean:
