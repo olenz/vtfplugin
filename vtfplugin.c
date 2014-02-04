@@ -45,7 +45,7 @@ into Tcl data structures.
 #endif
 
 #define VERSION_MAJOR 2
-#define VERSION_MINOR 2
+#define VERSION_MINOR 4
 
 /* TODO:
 - volumetric/graphics format
