@@ -12,12 +12,12 @@ CPPFLAGS=-I$(VMDINCLUDES)
 
 VMDINCLUDES=$(VMDDIR)/plugins/include
 # comment this line, if zlib is not available
+_USE_TCL=1
 _USE_ZLIB=1
-#DEBUG=1
+DEBUG=1
 
 CC=gcc
-CFLAGS=-Wall -g -O0 -fPIC -pedantic
-LDFLAGS=-ltcl8.5
+CFLAGS=-Wall -fPIC -pedantic
 SHLD=$(CC)
 SHLDFLAGS=-shared $(LDFLAGS)
 
@@ -26,6 +26,11 @@ SHLDFLAGS=-shared $(LDFLAGS)
 #SHLD=$(CC)
 #SHLDFLAGS=-bundle $(LDFLAGS)
 
+ifdef _USE_TCL
+CFLAGS += -D _USE_TCL
+LDFLAGS=-ltcl8.5
+endif
+
 ifdef _USE_ZLIB
 # if you want to enable compressed files, use these
 CFLAGS += -D_USE_ZLIB
@@ -33,7 +38,9 @@ LDFLAGS += -lz
 endif
 
 ifdef DEBUG
-CFLAGS += -DDEBUG
+CFLAGS += -g -O0 -DDEBUG
+else
+CFLAGS += -O3
 endif
 
 all: vtftest vtfplugin.so 

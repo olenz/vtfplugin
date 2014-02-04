@@ -13,14 +13,22 @@ the function vtf_parse_userdata is the entry point when the plugin is
 called from the Tcl module "vtftools.tcl" to allow reading in userdata
 into Tcl data structures.
 */
+#ifdef _MSC_VER
+/* Turn off annoying Windows warnings. */
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
+
 #include <molfile_plugin.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
-#include <tcl.h>
 
+#ifdef _USE_TCL
+#include <tcl.h>
+#endif
 #ifdef _USE_ZLIB
 #include <zlib.h>
 #define VTFFILE gzFile
@@ -30,6 +38,10 @@ into Tcl data structures.
 #define fclose gzclose
 #else
 #define VTFFILE FILE*
+#endif
+
+#ifdef _MSC_VER
+#define strdup _strdup
 #endif
 
 #define VERSION_MAJOR 2
@@ -48,8 +60,10 @@ into Tcl data structures.
 static molfile_atom_t default_atom;
 char* default_userdata;
 const char *molid;
-Tcl_Interp *tcl_interp;
 const char* userdata_varname;
+#ifdef _USE_TCL
+Tcl_Interp *tcl_interp;
+#endif
 
 #define VTF_MOLFILE 0
 #define VTF_USERDATA 1
@@ -91,6 +105,7 @@ typedef struct {
 /* global variable: contains the line number of the file */
 static int vtf_lineno = 0;
 
+#ifdef _USE_TCL
 /* Make the atom userdata available to Tcl. */
 void vtf_set_atom_userdata(const int aid, const char* userdata) {
   static char array_index[255];
@@ -117,6 +132,7 @@ void vtf_set_coordinate_userdata(const unsigned int timestep,
   sprintf(array_index, "%s.step%d.%d", molid, timestep, aid);
   Tcl_SetVar2(tcl_interp, userdata_varname, array_index, userdata, 0);
 }
+#endif
 
 /***************************************************
  * Print an error message.
@@ -256,11 +272,13 @@ static void vtf_create_atoms_as_needed(int max_aid, vtf_data *d) {
       for (aid = d->natoms; aid <= max_aid; aid++)
         d->atoms[aid] = default_atom;
       d->natoms = max_aid+1;
+#ifdef _USE_TCL
     if (d->read_mode != VTF_MOLFILE) {
       /* fill up with default userdata */
       for (aid = d->natoms; aid <= max_aid; aid++)
         vtf_set_atom_userdata(aid, default_userdata);
     }
+#endif
   }
 }
 
@@ -287,7 +305,7 @@ static int *vtf_parse_aid_specifier(char *s, vtf_data *d) {
     while (1) {
       from = d->natoms;
 
-      if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
+      if (sscanf(s, " %u:%u%n", &from, &to, &n) == 2) {
         /* RANGE */
         if (from > to) { 
           vtf_error("bad range specifier (from > to):", s); 
@@ -304,7 +322,7 @@ static int *vtf_parse_aid_specifier(char *s, vtf_data *d) {
           offset++;
         }
 
-      } else if (sscanf(s, "%u%n", &to, &n) == 1) {
+      } else if (sscanf(s, " %u%n", &to, &n) == 1) {
         /* SINGLE AID */
         vtf_create_atoms_as_needed(to, d);
         /* add the aid to the aid_list */
@@ -366,7 +384,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   /* HANDLE THE AID SPECIFIER */
 
   /* save the aid specifier */
-  if (sscanf(s, "%255s %n", aid_specifier, &n) < 1) {
+  if (sscanf(s, " %255s%n", aid_specifier, &n) < 1) {
     vtf_error("atom specifier is missing", line);
     return MOLFILE_ERROR;
   }
@@ -388,7 +406,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
   
   /* handle the keywords */
   rest_is_userdata = 0;
-  while (sscanf(s, "%255s %n", keyword, &n) == 1) {
+  while (sscanf(s, " %255s%n", keyword, &n) == 1) {
     s += n;
 #ifdef DEBUG
     printf("keyword: \"%s\" rest: \"%s\"\n", keyword, s);
@@ -396,7 +414,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     switch (tolower(keyword[0])) {
     case 'n': {
       /* name */
-      if (sscanf(s, "%16s %n", atom.name, &n) == 1) {
+      if (sscanf(s, " %16s%n", atom.name, &n) == 1) {
         AIDLOOP(strcpy(cur_atom->name, atom.name));
       } else {
         vtf_error("could not get name in atom record", line);
@@ -407,7 +425,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 't': {
       /* type */
-      if (sscanf(s, "%16s %n", atom.type, &n) == 1) {
+      if (sscanf(s, " %16s%n", atom.type, &n) == 1) {
         AIDLOOP(strcpy(cur_atom->type, atom.type));
       } else {
         vtf_error("could not get type in atom record", line);
@@ -421,7 +439,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       if (strlen(keyword) == 1 || 
           strncmp(keyword, "rad", 3) == 0) { 
         /* radius */
-        if (sscanf(s, "%f %n", &atom.radius, &n) == 1) {
+        if (sscanf(s, " %f%n", &atom.radius, &n) == 1) {
           AIDLOOP(cur_atom->radius = atom.radius);
         } else {
           vtf_error("could not get radius in atom record", line);
@@ -431,7 +449,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         d->optflags |= MOLFILE_RADIUS;
       } else if (strcmp(keyword, "resid") == 0) {
         /* resid */
-        if (sscanf(s, "%d %n", &atom.resid, &n) == 1) {
+        if (sscanf(s, " %d%n", &atom.resid, &n) == 1) {
           AIDLOOP(cur_atom->resid = atom.resid);
         } else {
           vtf_error("could not get resid in atom record", line);
@@ -441,7 +459,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       } else if (strcmp(keyword, "res") == 0 || 
                  strcmp(keyword, "resname") == 0) {
         /* resname */
-        if (sscanf(s, "%8s %n", atom.resname, &n) == 1) {
+        if (sscanf(s, " %8s%n", atom.resname, &n) == 1) {
           AIDLOOP(strcpy(cur_atom->resname, atom.resname));
         } else {
           vtf_error("could not get resname in atom record", line);
@@ -460,7 +478,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 's': {
       /* segid */
-      if (sscanf(s, "%8s %n", atom.segid, &n) == 1) {
+      if (sscanf(s, " %8s%n", atom.segid, &n) == 1) {
         AIDLOOP(strcpy(cur_atom->segid, atom.segid));
       } else {
         vtf_error("could not get segid in atom record", line);
@@ -472,7 +490,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'i': {
       /* insertion */
-      if (sscanf(s, "%2s %n", atom.insertion, &n) == 1) {
+      if (sscanf(s, " %2s%n", atom.insertion, &n) == 1) {
         AIDLOOP(strcpy(cur_atom->insertion, atom.insertion));
       } else {
         vtf_error("could not get insertion in atom record", line);
@@ -487,7 +505,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* chain, charge */
       if (strlen(keyword) == 1 || 
           strcmp(keyword, "chain") == 0) {
-        if (sscanf(s, "%2s %n", atom.chain, &n) == 1) {
+        if (sscanf(s, " %2s%n", atom.chain, &n) == 1) {
           AIDLOOP(strcpy(cur_atom->chain, atom.chain));
           s += n;
           break;
@@ -502,7 +520,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* q and charge */
       if (strlen(keyword) == 1 ||
           strcmp(keyword, "charge") == 0) {
-        if (sscanf(s, "%f %n", &atom.charge, &n) == 1) {
+        if (sscanf(s, " %f%n", &atom.charge, &n) == 1) {
           AIDLOOP(cur_atom->charge = atom.charge);
         } else {
           vtf_error("could not get charge in atom record", line);
@@ -524,7 +542,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
       /* altloc, atomicnumber */
       if (strlen(keyword)== 1 || 
           strcmp(keyword, "atomicnumber") == 0) {
-        if (sscanf(s, "%d %n", &atom.atomicnumber, &n) == 1) {
+        if (sscanf(s, " %d%n", &atom.atomicnumber, &n) == 1) {
           AIDLOOP(cur_atom->atomicnumber = atom.atomicnumber);
         } else {
           vtf_error("could not get atomicnumber in atom record", line);
@@ -533,7 +551,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
         }
         d->optflags |= MOLFILE_ATOMICNUMBER;
       } else if (strcmp(keyword, "altloc")) {
-        if (sscanf(s, "%2s %n", atom.altloc, &n) == 1) {
+        if (sscanf(s, " %2s%n", atom.altloc, &n) == 1) {
           AIDLOOP(strcpy(cur_atom->altloc, atom.altloc));
         } else {
           vtf_error("could not get altloc in atom record", line);
@@ -553,7 +571,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'o': {
       /* occupancy */
-      if (sscanf(s, "%f %n", &atom.occupancy, &n) == 1) {
+      if (sscanf(s, " %f%n", &atom.occupancy, &n) == 1) {
         AIDLOOP(cur_atom->occupancy = atom.occupancy);
       } else {
         vtf_error("could not get occupancy in atom record", line);
@@ -566,7 +584,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'b': {
       /* bfactor */
-      if (sscanf(s, "%f %n", &atom.bfactor, &n) == 1) {
+      if (sscanf(s, " %f%n", &atom.bfactor, &n) == 1) {
         AIDLOOP(cur_atom->bfactor = atom.bfactor);
       } else {
         vtf_error("could not get bfactor in atom record", line);
@@ -579,7 +597,7 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     }
     case 'm': {
       /* mass */
-      if (sscanf(s, "%f %n", &atom.mass, &n) == 1) {
+      if (sscanf(s, " %f%n", &atom.mass, &n) == 1) {
         AIDLOOP(cur_atom->mass = atom.mass);
       } else {
         vtf_error("could not get mass in atom record", line);
@@ -593,9 +611,11 @@ static int vtf_parse_atom(char *line, vtf_data *d) {
     case 'u': {
       /* userdata: the rest of the line is user data */
       rest_is_userdata = 1;
+#ifdef _USE_TCL
       if (d->read_mode != VTF_MOLFILE) {
         AIDLOOP(vtf_set_atom_userdata(aid, s));
       }
+#endif
       break;
     }
     default: { 
@@ -642,7 +662,7 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
   s = line;
 
   while (1) {
-    if (sscanf(s, "%u::%u%n", &from, &to, &n) == 2) {
+    if (sscanf(s, " %u::%u%n", &from, &to, &n) == 2) {
       /* chain specifier */
       if (from > to) {
         vtf_error("bad chain specifier (from > to):", s); 
@@ -659,7 +679,7 @@ static int vtf_parse_bond(char *line, vtf_data *d) {
         d->to[bid] = aid+2;
         bid++;
       }
-    } else if (sscanf(s, "%u:%u%n", &from, &to, &n) == 2) {
+    } else if (sscanf(s, " %u:%u%n", &from, &to, &n) == 2) {
       /* single bond specifier */
       d->nbonds += 1;
       d->from = realloc(d->from, d->nbonds*sizeof(int));
@@ -700,14 +720,14 @@ static int vtf_parse_pbc(char *line, vtf_data *d) {
   char *s;
   int n = 0;
 
-  if (sscanf(line, "%f %f %f %n", &d->A, &d->B, &d->C, &n) < 3) {
+  if (sscanf(line, " %f %f %f%n", &d->A, &d->B, &d->C, &n) < 3) {
     s = line;
     vtf_error("Couldn't parse unit cell dimensions", s);
     return MOLFILE_ERROR;
   }
   s = line + n;
 
-  n = sscanf(s, "%f %f %f", &d->alpha, &d->beta, &d->gamma);
+  n = sscanf(s, " %f %f %f", &d->alpha, &d->beta, &d->gamma);
   if (n > 0 && n < 3) {
     vtf_error("Couldn't parse unit cell angles", line);
     return MOLFILE_ERROR;
@@ -719,6 +739,7 @@ static int vtf_parse_pbc(char *line, vtf_data *d) {
    Return MOLFILE_SUCCESS, if it was sucessfully parsed, MOLFILE_ERROR
    if an error occured. */
 static int vtf_parse_timestep(char *line, vtf_data *d) {
+  while (strlen(line) > 0 && isspace(line[0])) line++;
   if (strlen(line) == 0) {
     d->timestep_mode = TIMESTEP_ORDERED;
   } else {
@@ -768,7 +789,7 @@ static void vtf_parse_structure(vtf_data *d) {
       /* ATOM RECORD */
     case 'a': {
       /* Remove the "atom" keyword" */
-     sscanf(line, "%255s %n", s, &n);
+     sscanf(line, " %255s%n", s, &n);
       line += n;
     }
     case '0':
@@ -790,7 +811,7 @@ static void vtf_parse_structure(vtf_data *d) {
       /* BOND RECORD */
     case 'b': {
       /* Remove the "bond" keyword" */
-      sscanf(line, "%255s %n", s, &n);
+      sscanf(line, " %255s%n", s, &n);
       line += n;
       d->return_code = vtf_parse_bond(line, d);
       break;
@@ -800,7 +821,7 @@ static void vtf_parse_structure(vtf_data *d) {
     case 'u':
     case 'p': {
       /* Remove the "pbc"/"unitcell" keyword */
-      sscanf(line, "%255s %n", s, &n);
+      sscanf(line, " %255s%n", s, &n);
       line += n;
       d->return_code = vtf_parse_pbc(line, d);
       break;
@@ -810,7 +831,7 @@ static void vtf_parse_structure(vtf_data *d) {
     case 'c': 
     case 't': {
       /* Remove the "timestep" or "coordinates" keyword */
-      sscanf(line, "%255s %n", s, &n);
+      sscanf(line, " %255s%n", s, &n);
       line += n;
     }
     case 'i': 
@@ -1019,7 +1040,7 @@ static int vtf_read_next_timestep(void *data,
       case 'c': 
       case 't':
         /* Remove the "timestep" or "coordinates" keyword */
-        sscanf(line, "%255s %n", s, &n);
+        sscanf(line, " %255s%n", s, &n);
         line += n;
       case 'i': 
       case 'o': 
@@ -1035,33 +1056,37 @@ static int vtf_read_next_timestep(void *data,
 
     /* parse timestep data */
     if (d->timestep_mode == TIMESTEP_ORDERED 
-        && sscanf(line, " %f %f %f %n", &x, &y, &z, &n) == 3) {
-      if (aid < natoms) {
+        && sscanf(line, " %f %f %f%n", &x, &y, &z, &n) == 3) {
+      if (aid < (unsigned int)natoms) {
         d->coords[aid*3] = x;
         d->coords[aid*3+1] = y;
         d->coords[aid*3+2] = z;
+#ifdef _USE_TCL
         if (d->read_mode == VTF_USERDATA) {
           /* the rest of the line is userdata */
           line += n;
           vtf_set_coordinate_userdata(d->timestep, aid, line);
         }
+#endif
         aid++;
       } else {
         vtf_error("too many atom coordinates in ordered timestep block", line);
         return MOLFILE_ERROR;
       }
     } else if (d->timestep_mode == TIMESTEP_INDEXED 
-               && sscanf(line, " %u %f %f %f %n", 
+               && sscanf(line, " %u %f %f %f%n", 
                          &aid, &x, &y, &z, &n) == 4) {
-      if (aid < natoms) {
+      if (aid < (unsigned int)natoms) {
         d->coords[aid*3] = x;
         d->coords[aid*3+1] = y;
         d->coords[aid*3+2] = z;
+#ifdef _USE_TCL
         if (d->read_mode == VTF_USERDATA) {
           /* the rest of the line is userdata */
           line += n;
           vtf_set_coordinate_userdata(d->timestep, aid, line);
         }
+#endif
       } else {
         vtf_error("atom id too large in indexed timestep block", line);
         return MOLFILE_ERROR;
@@ -1071,7 +1096,7 @@ static int vtf_read_next_timestep(void *data,
       case 'u':
       case 'p': {
         /* Remove the "pbc"/"unitcell" keyword */
-        sscanf(line, "%255s %n", s, &n);
+        sscanf(line, " %255s%n", s, &n);
         line += n;
         if (vtf_parse_pbc(line, d) != MOLFILE_SUCCESS) 
           return MOLFILE_ERROR;
@@ -1081,11 +1106,13 @@ static int vtf_read_next_timestep(void *data,
         /* USER DATA RECORD */
       case 'd': {
         /* Remove the "data" keyword */
-        sscanf(line, "%255s %n", s, &n);
+        sscanf(line, " %255s%n", s, &n);
+#ifdef _USE_TCL
         if (d->read_mode == VTF_USERDATA) {
           line += n;
           vtf_set_timestep_userdata(d->timestep, line);
         }
+#endif
         break;
       }
         
@@ -1093,7 +1120,7 @@ static int vtf_read_next_timestep(void *data,
       case 'c': 
       case 't': {
         /* Remove the "timestep" or "coordinates" keyword */
-        sscanf(line, "%255s %n", s, &n);
+        sscanf(line, " %255s%n", s, &n);
         line += n;
       }
       case 'i': 
@@ -1261,6 +1288,7 @@ VMDPLUGIN_API int VMDPLUGIN_fini() {
   return VMDPLUGIN_SUCCESS;
 }
 
+#ifdef _USE_TCL
 /***************************************************/
 /* VTFTOOLS USERDATA PART */
 /***************************************************/
@@ -1325,3 +1353,4 @@ int Vtfplugin_Init(Tcl_Interp *interp) {
                     NULL, NULL);
   return TCL_OK;
 }
+#endif
